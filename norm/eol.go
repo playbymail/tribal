@@ -2,39 +2,31 @@
 
 package norm
 
-import "bytes"
-
 const (
-	// CR and LF are the ASCII codes for carriage return and line feed, respectively.
-	// They are used to represent the end of a line in text files and are needed for
-	// cleaning up the text from Windows and MacOS line endings.
+	// ASCII codes for carriage return and line feed.
 	CR = '\r'
 	LF = '\n'
 )
 
-// NormalizeEOL returns a copy of the input with different types of EOL converted to Unix EOL.
-// Converts Windows EOL (CR+LF) to Unix EOL (LF).
-// Converts Classic Mac EOL (CR) to Unix EOL (LF).
-// Unix EOL (LF) passes through unchanged.
-//
-// BUG: if the input is empty, it returns the input, not a copy of it.
-func NormalizeEOL(input []byte) []byte {
-	if len(input) == 0 {
-		return input
-	}
-	output := bytes.NewBuffer(make([]byte, 0, len(input)))
-	for len(input) != 0 {
-		if input[0] == CR { // window or maybe classic mac
-			input = input[1:]
-			// found CR, check for CR LF
-			if len(input) != 0 && input[0] == LF {
-				input = input[1:]
-			}
-			output.WriteByte(LF)
+// LineEndings returns a copy of the input with all line endings
+// (Windows, MacOS, or Unix) converted to Unix EOL.
+func LineEndings(data []byte) []byte {
+	// buffer to store normalized output.
+	normalized := make([]byte, 0, len(data))
+	// process each byte in the input slice.
+	for i := 0; i < len(data); i++ {
+		if data[i] != CR {
+			// copy non-CR characters as-is.
+			normalized = append(normalized, data[i])
 			continue
 		}
-		output.WriteByte(input[0])
-		input = input[1:]
+		// handle Windows-style CR LF or standalone CR.
+		if i+1 < len(data) && data[i+1] == LF {
+			// skip the CR in CR LF.
+			i++
+		}
+		// replace with a single LF.
+		normalized = append(normalized, LF)
 	}
-	return output.Bytes()
+	return normalized
 }

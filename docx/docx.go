@@ -21,7 +21,9 @@ import (
 	"strings"
 )
 
-// ReadFile loads a Word document from a file and returns the text as a string.
+// ReadFile loads a Word document from a file and returns the text as a slice of strings.
+// Technically, each string is a paragraph. In practice, the turn report is composed of
+// single line paragraphs.
 func ReadFile(path string) ([]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
