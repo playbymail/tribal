@@ -1,11 +1,15 @@
 // Copyright (c) 2024 Michael D Henderson. All rights reserved.
 
 // Package docx provides a reader for Microsoft Word documents.
+//
+// The reader is copied from https://github.com/lu4p/cat/blob/master/docxtxt/docxreader.go.
+// All credit goes to the original author, https://github.com/lu4p.
+//
+// A few modifications were made to make it work with the Tribal reader.
+// All errors are mine, naturally.
 package docx
 
 // http://officeopenxml.com/anatomyofOOXML.php
-
-// copied from https://github.com/lu4p/cat/blob/master/docxtxt/docxreader.go
 
 import (
 	"archive/zip"
@@ -17,22 +21,21 @@ import (
 	"strings"
 )
 
-// ReadFile loads a Word document from a file, converts it to lower-case plain text, and returns the text as a byte slice.
-func ReadFile(path string) ([]byte, error) {
+// ReadFile loads a Word document from a file and returns the text as a string.
+func ReadFile(path string) ([]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return ReadBuffer(data)
+	return Read(data)
 }
 
-// ReadBuffer loads a Word document from a byte slice, converts it to lower-case plain text, and returns the text as a byte slice.
-func ReadBuffer(data []byte) ([]byte, error) {
-	return Read(bytes.NewReader(data))
-}
+// Read reads a Word document from a byte slice and returns the contents
+// as a slice of strings. Each string is a single paragraph from the document.
+func Read(data []byte) ([]string, error) {
+	r := bytes.NewReader(data)
 
-// Read reads a Word document, converts it to lower-case plain text, and returns the text as a byte slice.
-func Read(r *bytes.Reader) ([]byte, error) {
+	// Word documents are zip files.
 	zr, err := zip.NewReader(r, r.Size())
 	if err != nil {
 		return nil, err
@@ -44,29 +47,44 @@ func Read(r *bytes.Reader) ([]byte, error) {
 		FilesContent:  map[string][]byte{},
 	}
 
+	// the zip file will contain many files. we have to scan the
+	// zip's directory listing to find the one we need.
+	const docName = "word/document.xml"
+	var docFolder *zip.File
 	for _, f := range doc.Files {
-		contents, _ := doc.retrieveFileContents(f.Name)
-		doc.FilesContent[f.Name] = contents
-	}
-
-	// convert the xml data to a slice of word tokens
-	doc.listP(string(doc.FilesContent["word/document.xml"]))
-
-	// convert the word tokens to a slice containing all the words.
-	// we collapse spaces into a single space and can't tell the difference between a space and a tab.
-	// we also destroy all the original Word tables.
-	result := &bytes.Buffer{}
-	for _, word := range doc.WordsList {
-		for column, content := range word.Content {
-			if column != 0 {
-				result.WriteByte(' ')
-			}
-			result.WriteString(strings.ToLower(content))
+		if f.Name == docName {
+			docFolder = f
 		}
-		result.WriteByte('\n')
+	}
+	if docFolder == nil {
+		return nil, errors.New(docName + " file not found")
+	}
+	// extract the XML data from the zip folder
+	var docXML string
+	if rdr, err := docFolder.Open(); err != nil {
+		return nil, err
+	} else if data, err := io.ReadAll(rdr); err != nil {
+		return nil, err
+	} else {
+		docXML = string(data)
 	}
 
-	return scrubNonPrintingGlyphs(result.Bytes()), nil
+	// convert the xml data to tokens.
+	// the tokens are stored as a list of paragraphs containing lists of words.
+	// unfortunately, the tokenizer destroys Word tables.
+	doc.listP(docXML)
+
+	// combine the tokens into a slice containing all the paragraphs.
+	// the docx library consume runs of spaces and tabs.
+	// we compensate by injecting a space between every token in a paragraph.
+	paragraphs := make([]string, 0, len(doc.WordsList))
+	for _, word := range doc.WordsList {
+		// word.Content holds the word tokens from a single paragraph.
+		// we're going to save that as a single line in the result.
+		paragraphs = append(paragraphs, strings.Join(word.Content, " "))
+	}
+
+	return paragraphs, nil
 }
 
 // docx zip struct
@@ -81,7 +99,7 @@ type words struct {
 	Content []string
 }
 
-// read all files contents
+// read all the data for a file in the zip file
 func (d *docx) retrieveFileContents(filename string) ([]byte, error) {
 	var file *zip.File
 	for _, f := range d.Files {
@@ -155,28 +173,4 @@ func (d *docx) listP(data string) {
 		}
 		d.getT(item)
 	}
-}
-
-var (
-	// pre-computed lookup table for acceptable printing characters
-	isPrintingGlyph [256]bool
-)
-
-func init() {
-	// initialize the lookup table for acceptable printing characters
-	for ch := '!'; ch < '~'; ch++ {
-		isPrintingGlyph[ch] = true
-	}
-	isPrintingGlyph['\n'] = true
-}
-
-// scrubNonPrintingGlyphs replaces all non-printing characters with spaces.
-// Updates the input slice in-place.
-func scrubNonPrintingGlyphs(input []byte) []byte {
-	for i := 0; i < len(input); i++ {
-		if !isPrintingGlyph[input[i]] {
-			input[i] = ' '
-		}
-	}
-	return input
 }
