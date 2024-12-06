@@ -1,0 +1,139 @@
+{
+package units
+
+// NB: including all the imports makes the pigeon parser generator run more quickly.
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+	"github.com/playbymail/tribal/parser/ast"
+)
+
+func toAnySlice(v any) []any {
+    if v == nil {
+        return nil
+    }
+    return v.([]any)
+}
+}
+
+UnitHeading <- u:UnitDeclaration honi:HexOrName* .* EOF {
+    var uht ast.UnitHeading_t
+    uht.Id = u.(ast.UnitId_t)
+
+    for _, hon := range toAnySlice(honi) {
+        switch v := hon.(type) {
+        case ast.CurrentHex_t:
+            if uht.CurrentHex != nil {
+                if uht.CurrentHex.Error == nil {
+                    uht.CurrentHex.Error = ast.ErrMultipleCurrentHexes
+                }
+            } else {
+                uht.CurrentHex = &v
+            }
+        case ast.PreviousHex_t:
+            if uht.PreviousHex != nil {
+                if uht.PreviousHex.Error == nil {
+                    uht.PreviousHex.Error = ast.ErrMultiplePreviousHexes
+                }
+            } else {
+                uht.PreviousHex = &v
+            }
+        case ast.UnitName_t:
+            uht.Name = v
+        case []uint8:
+            log.Printf("unexpected input %q\n", string(v))
+            if uht.Error == nil {
+                uht.Error = ast.ErrUnexpectedInput
+            }
+        default:
+            panic(fmt.Errorf("unexpected type %T", v))
+        }
+    }
+    return &uht, nil
+}
+
+UnitDeclaration <- u:CourierUnit {
+    return u, nil
+} / u:ElementUnit {
+    return u, nil
+} / u:FleetUnit {
+    return u, nil
+} / u:GarrisonUnit {
+    return u, nil
+} / u:TribeUnit {
+    return u, nil
+}
+
+CourierUnit <- "courier" SP DIGIT DIGIT DIGIT DIGIT "c" [1-9] &"," {
+    return ast.UnitId_t(string(c.text[8:14])), nil
+}
+
+ElementUnit <- "element" SP DIGIT DIGIT DIGIT DIGIT "e" [1-9] &"," {
+    return ast.UnitId_t(string(c.text[8:14])), nil
+}
+
+FleetUnit <- "fleet" SP DIGIT DIGIT DIGIT DIGIT "f" [1-9] &"," {
+    return ast.UnitId_t(string(c.text[6:12])), nil
+}
+
+GarrisonUnit <- "garrison" SP DIGIT DIGIT DIGIT DIGIT "g" [1-9] &"," {
+    return ast.UnitId_t(string(c.text[9:15])), nil
+}
+
+TribeUnit <- "tribe" SP DIGIT DIGIT DIGIT DIGIT &"," {
+    return ast.UnitId_t(string(c.text[6:10])), nil
+}
+
+HexOrName <- "," ch:CurrentHex {
+    return ch, nil
+} / "," ph:PreviousHex {
+    return ph, nil
+} / "," un:UnitName {
+    return un, nil
+}
+
+UnitName <- (![,] .)* {
+    return ast.UnitName_t(string(c.text)), nil
+}
+
+CurrentHex <- "current hex = " LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
+    ch := ast.CurrentHex_t{}
+    ch.Coords, ch.Error = tokenToCoords(c.text[14:])
+    return ch, nil
+} / "current hex = ## " DIGIT DIGIT DIGIT DIGIT {
+    ch := ast.CurrentHex_t{IsObscured: true}
+    ch.Coords, ch.Error = tokenToCoords(c.text[14:])
+    return ch, nil
+} / "current hex = n/a" {
+    ch := ast.CurrentHex_t{IsNA: true}
+    return ch, nil
+}
+
+PreviousHex <- "(previous hex = ## " DIGIT DIGIT DIGIT DIGIT ")" {
+    ph := ast.PreviousHex_t{IsObscured: true}
+    ph.Coords, ph.Error = tokenToCoords(c.text[16:23])
+    return ph, nil
+} / "(previous hex = " LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT ")" {
+    ph := ast.PreviousHex_t{}
+    ph.Coords, ph.Error = tokenToCoords(c.text[16:23])
+    return ph, nil
+} / "(previous hex = n/a)" {
+    ph := ast.PreviousHex_t{IsNA: true}
+    return ph, nil
+}
+
+EOF    = !.
+DIGIT  = [0-9]
+LETTER = [a-z]
+SP     = [ \t]+
+_      = [ \t]*

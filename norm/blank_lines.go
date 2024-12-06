@@ -2,26 +2,23 @@
 
 package norm
 
-// TrimBlankLines removes leading and trailing blank lines from the slice of byte slices.
-// Returns the trimmed slice.
-// If the input slice is empty or contains only blank lines, returns nil.
-func TrimBlankLines(lines [][]byte) [][]byte {
-	if lines == nil {
+// RemoveEmptyLines removes all empty lines from the slice of byte slices.
+// Returns a copy of the slice containing the lines that were not empty.
+// If the input slice is empty or contains only empty lines, returns nil.
+func RemoveEmptyLines(input [][]byte) [][]byte {
+	if input == nil {
 		return nil
 	}
-	start, end := 0, len(lines)
-	// find the first non-blank line
-	for start < end && len(lines[start]) == 0 {
-		start++
+	var lines [][]byte
+	for n, line := range input {
+		if len(line) > 0 {
+			if lines == nil {
+				lines = make([][]byte, 0, len(input)-n)
+			}
+			lines = append(lines, line)
+		}
 	}
-	// find the last non-blank line
-	for start < end && len(lines[end-1]) == 0 {
-		end--
-	}
-	if start == end {
-		return nil
-	}
-	return lines[start:end]
+	return lines
 }
 
 // TrimLeadingBlankLines trims the leading blank lines from the slice of byte slices.

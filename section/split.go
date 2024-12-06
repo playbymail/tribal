@@ -6,11 +6,12 @@ import (
 	"bytes"
 	"github.com/playbymail/tribal/is"
 	"github.com/playbymail/tribal/norm"
+	"regexp"
 )
 
 type Section struct {
 	Line   int // line number in the original input
-	Id     int
+	Id     int // section number, starting at 1
 	Header []byte
 	Turn   []byte
 	Moves  struct {
@@ -41,7 +42,11 @@ func Split(input [][]byte) (sections []*Section) {
 		line = norm.NormalizeSpaces(bytes.ToLower(line))
 		//log.Printf("section: %d: %q\n", no, line)
 		if is.UnitHeader(line) {
-			section = &Section{Id: no + 1, Header: line}
+			section = &Section{
+				Id:     len(sections) + 1,
+				Line:   no + 1,
+				Header: bdup(line),
+			}
 			sections = append(sections, section)
 		} else if section == nil {
 			continue
@@ -62,4 +67,15 @@ func Split(input [][]byte) (sections []*Section) {
 		}
 	}
 	return sections
+}
+
+var (
+	rxTurnHeader = regexp.MustCompile(`^current turn (\d{3,4})-(\d{1,2})\(#\d+\),`)
+)
+
+// bdup returns a copy of the slice.
+func bdup(b []byte) []byte {
+	b2 := make([]byte, len(b))
+	copy(b2, b)
+	return b2
 }

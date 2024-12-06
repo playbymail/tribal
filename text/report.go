@@ -18,6 +18,7 @@ func ReadFile(path string) ([][]byte, error) {
 }
 
 // Read reads a turn report from a byte slice and returns the contents as a slice of lines.
+// The input is assumed to be plain text.
 func Read(data []byte) ([][]byte, error) {
 	// normalize line endings before splitting.
 	return bytes.Split(norm.LineEndings(data), []byte{'\n'}), nil

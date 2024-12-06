@@ -1,0 +1,61 @@
+{
+package turns
+
+// NB: including all the imports makes the pigeon parser generator run more quickly.
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+)
+}
+
+TurnLine <- "current turn" SP year:Year "-" month:Month "(#" no:TurnNo ")" .* EOF {
+    return &TurnLine_t{
+        No:    no.(int),
+        Year:  year.(int),
+        Month: month.(int),
+    }, nil
+}
+
+Year <- DIGIT+ {
+    year, err := strconv.Atoi(string(c.text))
+    if err != nil {
+        return 0, err
+    } else if !(899 <= year && year <= 999) {
+        return 0, ErrInvalidYear
+    }
+    return year, nil
+}
+
+Month <- DIGIT+ {
+    month, err := strconv.Atoi(string(c.text))
+    if err != nil {
+        return 0, err
+    } else if !(1 <= month && month <= 12) {
+        return 0, ErrInvalidMonth
+    }
+    return month, nil
+}
+
+TurnNo <- DIGIT+ {
+    turn, err := strconv.Atoi(string(c.text))
+    if err != nil {
+        return 0, err
+    } else if !(0 <= turn && turn <= 9999) {
+        return 0, ErrInvalidTurnNo
+    }
+    return turn, nil
+}
+
+EOF    = !.
+DIGIT  = [0-9]
+SP     = [ \t]+

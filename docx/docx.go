@@ -30,8 +30,8 @@ func ReadFile(path string) ([][]byte, error) {
 	return Read(data)
 }
 
-// Read reads a Word document from a byte slice and returns the contents
-// as a slice of byte slices. Each slice of bytes is a single paragraph from the document.
+// Read reads a Word document from a byte slice and returns the contents as a slice of byte slices.
+// Each slice of bytes is a single paragraph from the document.
 func Read(data []byte) ([][]byte, error) {
 	r := bytes.NewReader(data)
 
@@ -53,7 +53,7 @@ func Read(data []byte) ([][]byte, error) {
 		}
 	}
 	if docFile == nil {
-		return nil, errors.New(docName + " file not found")
+		return nil, errors.Join(ErrInvalidDocument, errors.New(docName+" file not found"))
 	}
 
 	// Extract the XML data from the ZIP file.
@@ -61,9 +61,9 @@ func Read(data []byte) ([][]byte, error) {
 	rdr, err := docFile.Open()
 	defer rdr.Close()
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrInvalidDocument, err)
 	} else if data, err := io.ReadAll(rdr); err != nil {
-		return nil, err
+		return nil, errors.Join(ErrInvalidDocument, err)
 	} else {
 		docXML = data
 	}

@@ -1,0 +1,163 @@
+= TribeNet Turn Report
+
+This is not official TribeNet documentation.
+It is my understanding of a report layout.
+
+I'm only documenting the bits that are used by OttoMap to generate the map.
+
+*Note*: All examples are in lower case. Turn reports are mixed case.
+
+== Common Terms
+
+I assume that you're familiar with TribeNet, so these definitions are very informal.
+
+. Coordinates - measure rows and columns from the upper-left corner of the grid or map
+.. Rows start at 1 increase top to bottom.
+.. Columns start at 1 increase left to right.
+. Grids - identified by two letters encoding the Row and Column.
+ The upper-left grid is AA and the bottom-right is ZZ.
+ The grid in row 2, column 3 is BC.
+. Maps - each grid contains a map that is 30 hexes wide by 21 hexes tall.
+. Directions - North is at the top of the map.
+ The codes are N, NE, SE, SW, and S.
+. Hex - each hex on a map is identified by Column then Row (this is the opposite of Grids!).
+ Both are always two-digit numbers (e.g., 01, not 1).
+ The upper-left hex is 0101 and the bottom-right is 3021.
+ Hexes have details like terrain, edges, and settlements.
+. Terrain - every hex has a terrain code.
+ The report uses both names (Swamp and Ocean) and short codes (SW and O).
+. Edge - every hex has six edges, each identified by the direction from the center of the hex.
+ Edges are called out in a report only when they're significant.
+. Border - an edge can have a feature like a river or canal that separates two hexes.
+ Usually a border will prevent units from moving between the hexes; sometimes not.
+. Passage - an edge can be crossed by something like a ford or mountain pass.
+ These are called passages because they sometimes allows a unit to cross a border that it normally couldn't.
+. Resources - things like ore deposits
+. Settlements - named villages
+. Location - all hexes have a location that tells us which grid they're on and their column and row on that grid.
+The location looks like "AA 0101."
+
+See https://tribenet.wiki/mapping/grid for details on the grids and maps.
+
+== Layout
+
+All turn reports contain a section for each unit that they are reporting.
+The sections have a header for the unit, information on the turn, movement and scouting results, and a status line for the unit.
+
+=== Unit Header
+
+The unit header looks similar for all unit types:
+
+----
+tribe 0987,,current hex = KP 0608,(previous hex = ## 0608)
+courier 0987c1,,current hex = KP 0810,(previous hex = ## 0608)
+element 0987e1,,current hex = LP 2001,(previous hex = ## 2021)
+fleet 0987f1,,current hex = KR 0708,(previous hex = n/a)
+----
+
+This header contains the unit and the unit's location.
+The Previous Hex value is where the unit started the turn.
+The Current Hex is where the unit ended the turn.
+
+=== Turn
+
+Each section contains a line with the turn number for the report.
+
+The full turn number line looks like:
+
+----
+current turn 900-05(#5),summer,fine next turn 900-06(#6),14/01/2024
+----
+
+Most sections will have a shorter turn number line:
+
+----
+current turn 900-05(#5),summer,fine
+----
+
+The full version is given for the first unit in a turn report (which is usually the Clan).
+
+=== Tribe Movement
+
+----
+tribe movement:move ne-pr\se-pr\se-gh\se-pr,o s w,ford se\se-gh,o sw se,river n,ford nw,los angeles
+tribe movement:move nw-pr\sw-pr,o nw,river s,ford sw\sw-pr,o n,ford ne\sw-pr\not enough m.p's to move to sw into grassy hills
+----
+
+The movement line consists of the "tribe movement: move" prefix followed by any number of individual steps.
+The steps are separated by backslashes.
+
+Each step usually contains a direction-terrain code followed by a comma separated list of results (or observations).
+
+The results for a step list border features (oceans, lakes, rivers, canals), passages (fords, passes), then settlements.
+
+A hex can have borders and passages on any edge, so the result lists the feature and the edge it is on.
+For example, "river n" means there is a river on the northern edge of the hex.
+The feature can be on multiple edges.
+When that happens, the directions are listed and separated by spaces.
+A result of "river n ne se" means that the river is on the northern, north-eastern, and south-eastern edges of the hex.
+
+A hex can also have neighbors like oceans, lakes, and mountains that are visible from it.
+The step for those will look like:
+
+----
+o nw ne
+----
+or
+----
+l s se
+----
+or
+----
+ljm n
+----
+
+The step will start with "not enough m.p's" only if the unit attempted to move and the destination hex's terrain required more movement points than were remaining for the unit.
+
+If the tribe doesn't move during the turn, they will still get a movement line, but it will be empty:
+
+----
+tribe movement:move
+----
+
+=== Tribe Follows
+
+=== Tribe Goes To
+
+=== Fleet Movement
+
+=== Scout
+
+Each section may contain up to eight scout lines.
+
+The results of patrols look like:
+
+----
+scout 1:scout n-gh\n-sw\not enough m.p's to move to n into prairie,nothing of interest found
+scout 2:scout n-pr\n-gh\n-rh,o nw n,find iron ore,0987 0987c2 0987c3\can't move on ocean to n of hex,patrolled and found 0987 0987c2 0987c3
+scout 3:scout se-pr\se-pr\se-pr\se-pr,l s\se-pr,l sw,river se s sw\no ford on river to se of hex,nothing of interest found
+scout 7:scout nw-rh\n-gh\n-pr,o nw n,3987,can't move on ocean to n of hex,patrolled and found 3987
+scout 8:scout se-pr\se-pr\s-pr\s-gh,river s\no ford on river to s of hex,nothing of interest found
+----
+
+The format is similar to the Tribe Movement line but includes more information.
+Scouts on patrol will find resources and other units as they move.
+
+If the result includes multiple resources, they will be space separated.
+
+If the result includes multiple units, they will be space separated.
+
+The last step will include a result starting with "nothing of interest found" if the scout found no resources or other units during any of their steps.
+Otherwise, it will include a result starting with "patrolled and found."
+
+=== Status
+
+----
+0987 status:prairie,0987
+0987c1 status:grassy hills,los angeles,o sw,river n,ford nw,0987c1 0987e1 0987e1 1987g1 2987c1
+0987c2 status:rocky hills,iron ore,o nw n,0987c2 0987c3 1987
+3987g1 status:conifer hills,coal,o sw,2987e1 3987g1
+----
+
+*Note*: I think that the order of the results is slightly different from moves and scouts.
+Not sure if settlements are before or after resources.

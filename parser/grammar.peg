@@ -1,0 +1,52 @@
+{
+package parser
+
+// NB: including all the imports make the parser generator run a bit more quickly.
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+)
+}
+
+SectionHeader <- ("courier" / "element" / "fleet" / "garrison" / "tribe") SP u:UNIT_ID "," UnitName? ",current hex =" SP ch:COORDS ",(previous hex =" SP ph:COORDS ")" EOF {
+    return SectionHeader_t {
+        UnitId:      u.(UnitId_t),
+        CurrentHex:  ch.(Coords_t),
+    }, nil
+}
+
+HeaderUnit <- ("courier" / "element" / "fleet" / "garrison" / "tribe") SP u:UNIT_ID EOF {
+    return u.(UnitId_t), nil
+}
+
+UnitName <- (![\n\r,] .)* {
+    return true, nil
+}
+
+COORDS <- "n/a" {
+    return tokenToCoords(c.text), nil
+} / "##" SP DIGIT DIGIT DIGIT DIGIT {
+    return tokenToCoords(c.text), nil
+} / LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
+    return tokenToCoords(c.text), nil
+}
+
+UNIT_ID <- DIGIT DIGIT DIGIT DIGIT ([cefg] [1-9])? {
+    return UnitId_t(c.text), nil
+}
+
+EOF    = !.
+DIGIT  = [0-9]
+LETTER = [a-z]
+SP     = [ \t]+
+_      = [ \t]*

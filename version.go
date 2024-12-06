@@ -1,13 +1,13 @@
 // Copyright (c) 2024 Michael D Henderson. All rights reserved.
 
-package main
+package tribal
 
 import (
 	"github.com/mdhender/semver"
 )
 
 var (
-	version = semver.Version{Major: 0, Minor: 5, Patch: 0}
+	version = semver.Version{Major: 0, Minor: 6, Patch: 0}
 )
 
 func Version() semver.Version {
