@@ -3,10 +3,8 @@
 package scanner
 
 type Token struct {
-	Type   Type
-	Value  string
-	offset int // offset of token in input
-	length int // length of token in input
+	Type  Type
+	Value string
 }
 
 func (t Type) String() string {

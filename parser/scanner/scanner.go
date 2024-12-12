@@ -1,24 +1,18 @@
 // Copyright (c) 2024 Michael D Henderson. All rights reserved.
 
+// Package scanner implements a lexical scanner for TribeNet reports.
 package scanner
 
-import (
-	"bytes"
-)
-
-// New returns a new scanner for the input.
+// New returns a new scanner for the report input.
 // The list of tokens we buffer never includes EOF.
 func New(input []byte) *Scanner {
-	s := &Scanner{
-		input:  input,
-		pos:    0,
-		length: len(input),
-	}
-	token := s.next()
-	for ; token.Type != EOF; token = s.next() {
+	s := &Scanner{}
+	tk := &tokenizer{input: input, length: len(input)}
+	token := tk.next()
+	for ; token.Type != EOF; token = tk.next() {
 		s.tokens = append(s.tokens, token)
 	}
-	s.pos, s.input, s.length = 0, nil, len(s.tokens)
+	s.length = len(s.tokens)
 	return s
 }
 
@@ -26,10 +20,9 @@ func New(input []byte) *Scanner {
 // It buffers all tokens at creation time for efficient access.
 // The tokens list never includes EOF.
 type Scanner struct {
-	input  []byte  // raw bytes being scanned (temporary, released after scanning)
-	pos    int     // current position in input/tokens
-	length int     // length of input/tokens
 	tokens []Token // collected tokens from input
+	length int     // number of tokens in the list
+	pos    int     // current position in the list of tokens
 }
 
 // Accept checks if the next token matches any of the given types.
@@ -62,7 +55,7 @@ func (s *Scanner) Backup() {
 // Returns EOF token if at end of input.
 func (s *Scanner) Next() Token {
 	if s.pos >= s.length {
-		return Token{Type: EOF, offset: s.length}
+		return Token{Type: EOF}
 	}
 	token := s.tokens[s.pos]
 	s.pos++
@@ -73,7 +66,7 @@ func (s *Scanner) Next() Token {
 // Returns EOF token if at end of input.
 func (s *Scanner) Peek() Token {
 	if s.pos >= s.length {
-		return Token{Type: EOF, offset: s.length}
+		return Token{Type: EOF}
 	}
 	return s.tokens[s.pos]
 }
@@ -82,7 +75,7 @@ func (s *Scanner) Peek() Token {
 // Returns EOF token if there are fewer than 2 tokens remaining.
 func (s *Scanner) PeekNext() Token {
 	if s.pos+1 >= s.length {
-		return Token{Type: EOF, offset: s.length}
+		return Token{Type: EOF}
 	}
 	return s.tokens[s.pos+1]
 }
@@ -151,75 +144,4 @@ func (s *Scanner) SkipRunTo(types ...Type) int {
 // The returned slice does not include the EOF token.
 func (s *Scanner) Tokens() []Token {
 	return s.tokens
-}
-
-// getch returns the next byte in the input and advances the position.
-// Returns 0 if at end of input.
-func (s *Scanner) getch() byte {
-	if s.pos >= s.length {
-		return 0
-	}
-	ch := s.input[s.pos]
-	s.pos++
-	return ch
-}
-
-// match checks if the next byte matches any in the valid set.
-// If there's a match, advances position and returns the byte with true.
-// If no match or at end of input, returns 0 with false.
-func (s *Scanner) match(valid ...byte) (byte, bool) {
-	if s.pos >= s.length {
-		return 0, false
-	}
-	ch := s.input[s.pos]
-	if bytes.IndexByte(valid, ch) == -1 {
-		return 0, false
-	}
-	s.pos++
-	return ch, true
-}
-
-// peek returns the next byte in the input without advancing the position.
-// Returns 0 if at end of input.
-func (s *Scanner) peek() byte {
-	if s.pos >= s.length {
-		return 0
-	}
-	return s.input[s.pos]
-}
-
-// next returns the next token in the input.
-// Handles newlines, whitespace, and text tokens distinctly.
-// For text tokens, converts value to lowercase.
-// Returns EOF token if at end of input.
-func (s *Scanner) next() Token {
-	if s.pos >= s.length {
-		return Token{Type: EOF, offset: s.length}
-	}
-	// anchor the token
-	token := Token{offset: s.pos}
-	ch := s.getch()
-	if ch == '\n' {
-		token.Type = Newline
-		token.length = s.pos - token.offset
-		return token
-	}
-	// lump whitespace and invalid characters together
-	if !glyphs[ch] {
-		token.Type = Whitespace
-		for s.pos < s.length && !glyphs[s.peek()] {
-			_ = s.getch()
-		}
-		token.length = s.pos - token.offset
-		return token
-	}
-	token.Type = Text
-	if !delimiters[ch] {
-		for s.pos < s.length && glyphs[s.peek()] && !delimiters[s.peek()] {
-			_ = s.getch()
-		}
-	}
-	token.length = s.pos - token.offset
-	token.Value = string(bytes.ToLower(s.input[token.offset : token.offset+token.length]))
-	return token
 }
