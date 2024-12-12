@@ -115,12 +115,9 @@ The Current Turn section contains the year, month, and turn number.
 
 === Tribe Movement
 
-TODO: fix the case and spacing in these examples.
-Also add the missing commas.
-
 ----
-tribe movement:move ne-pr\se-pr\se-gh\se-pr,o s w,ford se\se-gh,o sw se,river n,ford nw,los angeles
-tribe movement:move nw-pr\sw-pr,o nw,river s,ford sw\sw-pr,o n,ford ne\sw-pr\not enough m.p's to move to sw into grassy hills
+Tribe Movement: Move NE-PR\SE-PR\SE-GH\SE-PR, O S W, Ford SE\SE-GH,O SW SE, River N, Ford NW,Los Angeles
+Tribe Movement: Move NW-PR\SW-PR,O NW, River S, Ford SW\SW-PR, O N, Ford NE\SW-PR\Not enough M.P's to move to SW into GRASSY HILLS
 ----
 
 The movement line consists of the "Tribe movement: move" prefix followed by any number of individual steps.
@@ -140,15 +137,15 @@ A hex can also have neighbors like oceans, lakes, and mountains that are visible
 The step for those will look like:
 
 ----
-o nw ne
+O NW NE
 ----
 or
 ----
-l s se
+L S SE
 ----
 or
 ----
-ljm n
+LJM N
 ----
 
 The step will start with "not enough m.p's" only if the unit attempted to move and the destination hex's terrain required more movement points than were remaining for the unit.
@@ -156,7 +153,7 @@ The step will start with "not enough m.p's" only if the unit attempted to move a
 If the tribe doesn't move during the turn, they will still get a movement line, but it will be empty:
 
 ----
-tribe movement:move
+Tribe Movement: Move
 ----
 
 === Tribe Follows
@@ -167,18 +164,16 @@ tribe movement:move
 
 === Scout
 
-TODO: Same fix as for movement.
-
 Each section may contain up to eight scout lines.
 
 The results of patrols look like:
 
 ----
-scout 1:scout n-gh\n-sw\not enough m.p's to move to n into prairie,nothing of interest found
-scout 2:scout n-pr\n-gh\n-rh,o nw n,find iron ore,0987 0987c2 0987c3\can't move on ocean to n of hex,patrolled and found 0987 0987c2 0987c3
-scout 3:scout se-pr\se-pr\se-pr\se-pr,l s\se-pr,l sw,river se s sw\no ford on river to se of hex,nothing of interest found
-scout 7:scout nw-rh\n-gh\n-pr,o nw n,3987,can't move on ocean to n of hex,patrolled and found 3987
-scout 8:scout se-pr\se-pr\s-pr\s-gh,river s\no ford on river to s of hex,nothing of interest found
+Scout 1: Scout N-GH\N-SW\Not enough M.P's to move to N into PRAIRIE,Nothing of interest found
+Scout 2: Scout N-PR\N-GH\N-RH,O NW N,Find IRON ORE,0987 0987c2 0987c3\Can't move on Ocean to N of HEX,Patrolled and found 0987 0987c2 0987c3
+Scout 3: Scout SE-PR\SE-PR\SE-PR\SE-PR,L S\SE-PR,L SW,River SE S SW\No Ford on River to SE of HEX,Nothing of interest found
+Scout 7: Scout NW-RH\N-GH\N-PR,O NW N,3987,Can't move on Ocean to N of HEX,Patrolled and found 3987
+Scout 8: Scout SE-PR\SE-PR\S-PR\S-GH,River S\No Ford on River to S of HEX,Nothing of interest found
 ----
 
 The format is similar to the Tribe Movement line but includes more information.
@@ -194,10 +189,10 @@ Otherwise, it will include a result starting with "patrolled and found."
 === Status
 
 ----
-0987 status:prairie,0987
-0987c1 status:grassy hills,los angeles,o sw,river n,ford nw,0987c1 0987e1 0987e1 1987g1 2987c1
-0987c2 status:rocky hills,iron ore,o nw n,0987c2 0987c3 1987
-3987g1 status:conifer hills,coal,o sw,2987e1 3987g1
+0987 Status: PRAIRIE,0987
+0987c1 Status: GRASSY HILLS,Los angeles,O SW,River N,Ford NW,0987c1 0987e1 0987e1 1987g1 2987c1
+0987c2 Status: ROCKY HILLS,Iron Ore,O NW N,0987c2 0987c3 1987
+3987g1 Status: CONIFER HILLS,Coal,O SW,2987e1 3987g1
 ----
 
 *Note*: I think that the order of the results is slightly different from moves and scouts.

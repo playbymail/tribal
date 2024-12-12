@@ -1,0 +1,200 @@
+%start_symbol report
+
+report ::= unit_section_list .
+
+unit_section_list ::= unit_section_list unit_section .
+unit_section_list ::= unit_section .
+
+unit_section ::= unit_header unit_body .
+
+unit_header ::=
+    unit_header_id COMMA unit_name COMMA current_hex COMMA LPAREN previous_hex RPAREN .
+
+unit_header_id ::= COURIER  COURIER_UNIT_ID  .
+unit_header_id ::= ELEMENT  ELEMENT_UNIT_ID  .
+unit_header_id ::= FLEET    FLEET_UNIT_ID    .
+unit_header_id ::= GARRISON GARRISON_UNIT_ID .
+unit_header_id ::= TRIBE    TRIBE_UNIT_ID    .
+
+unit_name ::= UNIT_NAME .
+unit_name ::= .
+
+current_hex  ::= CURRENT_HEX  EQUALS GRID_LOCATION .
+previous_hex ::= PREVIOUS_HEX EQUALS GRID_LOCATION .
+
+unit_body ::= unit_body_line_list.
+unit_body ::= .  /* empty is valid */
+
+unit_body_line_list ::= unit_body_line_list unit_body_line.
+unit_body_line_list ::= unit_body_line.
+
+unit_body_line ::= turn_line.
+unit_body_line ::= movement.
+unit_body_line ::= status_line.
+
+movement ::= tribe_movement .
+movement ::= TRIBE FOLLOWS UNIT_ID  .
+movement ::= TRIBE GOES_TO GRID_LOCATION .
+movement ::= fleet_movement .
+
+tribe_movement ::= TRIBE MOVEMENT COLON MOVE tribe_steps .
+tribe_movement ::= TRIBE MOVEMENT COLON MOVE .
+
+tribe_steps ::= tribe_steps BACKSLASH tribe_step .
+tribe_steps ::= tribe_step .
+
+tribe_step ::= DIRECTION DASH TERRAIN tribe_step_results .
+tribe_step ::= DIRECTION DASH TERRAIN .
+tribe_step ::= CANT_MOVE_INTO BLOCKER TO DIRECTION OF_HEX .
+tribe_step ::= CANT_MOVE_ON   BLOCKER TO DIRECTION OF_HEX .
+tribe_step ::= NO_FORD        BLOCKER TO DIRECTION OF_HEX .
+tribe_step ::= EXHAUSTED DIRECTION INTO TERRAIN_NAME .
+
+tribe_step_results ::= tribe_step_results tribe_step_result .
+tribe_step_results ::= tribe_step_result .
+
+tribe_step_result ::= EDGE_CSV  edge_csv .
+tribe_step_result ::= EDGE_LIST edge_list .
+tribe_step_result ::= SETTLEMENT .
+
+/* there are two types of edge lists.
+ * the first requires commas and the second has no separator at all.
+ */
+edge_csv ::= edge_csv COMMA DIRECTION .
+edge_csv ::= DIRECTION .
+
+edge_list ::= edge_list DIRECTION .
+edge_list ::= DIRECTION .
+
+fleet_movement ::= WINDS DIRECTION FLEET MOVEMENT COLON MOVE fleet_steps .
+
+fleet_steps ::= fleet_steps BACKSLASH fleet_step .
+fleet_steps ::= fleet_step .
+
+fleet_step ::= DIRECTION DASH TERRAIN fleet_step_results DASH deck_result crowsnest_result
+fleet_step ::= NO_RIVER DIRECTION OF_HEX .
+
+fleet_step_results ::= fleet_step_results fleet_step_result .
+fleet_step_results ::= fleet_step_result .
+
+fleet_step_result ::= EDGE_CSV  edge_csv .
+fleet_step_result ::= EDGE_LIST edge_list .
+fleet_step_result ::= SETTLEMENT .
+
+/* deck sighting should have six sightings, one for every tile surrounding the current hex */
+deck_result ::=
+    LPAREN DIRECTION TERRAIN
+    COMMA  DIRECTION TERRAIN
+    COMMA  DIRECTION TERRAIN
+    COMMA  DIRECTION TERRAIN
+    COMMA  DIRECTION TERRAIN
+    COMMA  DIRECTION TERRAIN
+    RPAREN .
+
+/* crow's nest has a dozen sightings, one for every tile that is two-hexes away */
+crowsnest_result ::=
+    LPAREN crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    COMMA  crowsnest_sighting
+    RPAREN .
+
+crowsnest_sighting ::= SIGHT LAND  DASH DIRECTION_CROWSNEST .
+crowsnest_sighting ::= SIGHT WATER DASH DIRECTION_CROWSNEST .
+
+scout_movement ::= SCOUT SCOUT_ID COLON SCOUT STILL scout_steps .
+scout_movement ::= SCOUT SCOUT_ID COLON SCOUT scout_steps .
+
+scout_steps ::= scout_steps BACKSLASH scout_step .
+scout_steps ::= scout_step .
+
+scout_step ::= DIRECTION DASH TERRAIN scout_step_results .
+scout_step ::= DIRECTION DASH TERRAIN .
+scout_step ::= CANT_MOVE_ON   BLOCKER TO DIRECTION OF_HEX .
+scout_step ::= NO_FORD        BLOCKER TO DIRECTION OF_HEX .
+scout_step ::= scout_step_results .
+
+scout_step_results ::= scout_step_results scout_step_result .
+scout_step_results ::= scout_step_result .
+
+scout_step_result ::= unit_csv .
+scout_step_result ::= FIND QUANTITY ITEM .
+scout_step_result ::= FIND RESOURCE .
+scout_step_result ::= NOTHING_FOUND .
+scout_step_result ::= PATROLLED_AND_FOUND unit_csv .
+
+unit_csv ::= unit_csv UNIT_ID .
+unit_csv ::= UNIT_ID .
+
+status_line: UNIT_ID STATUS COLON TERRAIN_NAME status_csv .
+
+status_csv ::= status_csv COMMA status .
+
+status ::= EDGE_CSV  edge_csv .
+status ::= RESOURCE .
+status ::= SETTLEMENT .
+status ::= unit_csv .
+
+%token BACKSLASH           /* Literal backslash */
+%token BLOCKER             /* Token for blocking terrain (e.g., "Lake", "Ocean", "River", "Swamp/Jungle Hill") */
+%token CANT_MOVE_INTO      /* Literal "Cannot Move Wagons into" */
+%token CANT_MOVE_ON        /* Literal "Can't Move on" */
+%token COLON               /* Literal ':' */
+%token COMMA               /* Literal ',' */
+%token COURIER             /* Literal 'Courier' */
+%token COURIER_UNIT_ID     /* Token for courier unit */
+%token CURRENT_HEX         /* Literal 'Current Hex' */
+%token DASH                /* Literal '-' */
+%token DIRECTION           /* Token for direction (e.g., "N", "SE") */
+%token DIRECTION_CROWSNEST /* Token for direction from outer ring (e.g., "N/N", "N/NE") */
+%token EDGE_CSV            /* Token for edge terrain with comma separated list (e.g. "Hsm", "L", "Lcm", "O") */
+%token EDGE_LIST           /* Token for edge terrain with space separated list (e.g. "Ford", "Pass", "River") */
+%token EQUALS              /* Literal '=' */
+%token ELEMENT             /* Literal 'Element' */
+%token ELEMENT_UNIT_ID     /* Token for element unit */
+%token EXHAUSTED           /* Literal "Not enough M.P's to move to" */
+%token FIND                /* Literal 'Find' */
+%token FLEET               /* Literal 'Fleet' */
+%token FLEET_UNIT_ID       /* Token for fleet unit */
+%token FOLLOWS             /* Literal 'Follows' */
+%token GARRISON            /* Literal 'Garrison' */
+%token GARRISON_UNIT_ID    /* Token for garrison unit */
+%token GOES_TO             /* Literal 'Goes to' */
+%token GRID_LOCATION       /* Token for location on the grid map (e.g., "AA 1010") */
+%token ITEM                /* Token for items (e.g., "Frame", "Silver") */
+%token LAND                /* Literal 'Land' */
+%token LPAREN              /* Literal '(' */
+%token MOVE                /* Literal 'Move' */
+%token MOVEMENT            /* Literal 'Movement' */
+%token NO_FORD             /* Literal "No Ford on" */
+%token NO_RIVER            /* Literal "No River Adjacent to Hex to" */
+%token NOTHING_FOUND       /* Literal "Nothing of interest found" */
+%token OF_HEX              /* Literal 'of Hex' */
+%token PATROLLED_AND_FOUND /* Literal "Patrolled and found" */
+%token PREVIOUS_HEX        /* Literal 'Previous Hex' */
+%token QUANTITY            /* Token for number of items (e.g., 1) */
+%token RESOURCE            /* Token for resources (e.g., "IRON ORE") */
+%token RPAREN              /* Literal ')' */
+%token TERRAIN             /* Token for terrain (e.g., "PR", "SW") */
+%token TERRAIN_NAME        /* Token for terrain name (e.g., "DECIDUOUS", "ROCKY HILLS", "SWAMP") */
+%token TO                  /* Literal 'to' */
+%token TRIBE               /* Literal 'Tribe' */
+%token TRIBE_UNIT_ID       /* Token for tribe unit */
+%token SCOUT               /* Literal 'Scout' */
+%token SCOUT_ID            /* Token for scout number (e.g., 1, 2) */
+%token SETTLEMENT          /* Token for settlement name */
+%token SIGHT               /* Literal 'Sight' */
+%token STATUS              /* Literal 'Status' */
+%token STILL               /* Literal 'Still' */
+%token UNIT_ID             /* A token for the unit's unique identifier */
+%token UNIT_NAME           /* A token for the unit's name */
+%token WATER               /* Literal 'Water' */
+%token WINDS               /* A token for wind strength (e.g., "MILD") */
