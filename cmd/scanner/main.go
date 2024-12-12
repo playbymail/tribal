@@ -25,12 +25,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tokens, lines := len(s.Tokens()), 0
-	log.Printf("scanner: read %d tokens, %d lines in %v", tokens, lines, time.Since(started))
+	log.Printf("scanner: read %d tokens in %v", s.NumTokens(), time.Since(started))
 
 	started = time.Now()
 	buf := &bytes.Buffer{}
-	priorTokenKind := scanner.EOF
+	lines, priorTokenKind := 0, scanner.EOF
 	for token := s.Next(); token.Type != scanner.EOF; token = s.Next() {
 		if token.Type == scanner.Newline {
 			lines++

@@ -6,7 +6,6 @@ package scanner
 import "fmt"
 
 // New returns a new scanner for the report input.
-// The list of tokens we buffer never includes EOF.
 // Version expects a string of the form "899-12" or "902-05."
 func New(input []byte, version string) (*Scanner, error) {
 	var tk Tokenizer
@@ -18,85 +17,96 @@ func New(input []byte, version string) (*Scanner, error) {
 	default:
 		return nil, fmt.Errorf("%s: unsupported version", version)
 	}
-	s := &Scanner{}
-	token := tk.next()
-	for ; token.Type != EOF; token = tk.next() {
-		s.tokens = append(s.tokens, token)
+	// create a scanner from the tokenizer.
+	s := &Scanner{
+		head: &Token{Type: BOF},
 	}
-	s.length = len(s.tokens)
+	// set current and tail to the head of the list
+	s.curr, s.tail = s.head, s.head
+	// add remaining tokens to the list
+	for token := tk.next(); token.Type != EOF; token = tk.next() {
+		token.prev = s.tail
+		s.tail.next = &token
+		s.tail = s.tail.next
+		s.length++
+	}
+	// ensure that we have an EOF token at the end of the list
+	s.tail.next = &Token{Type: EOF, prev: s.tail}
+	s.tail = s.tail.next
 	return s, nil
 }
 
 // Scanner tokenizes input bytes into a sequence of tokens.
 // It buffers all tokens at creation time for efficient access.
-// The tokens list never includes EOF.
 type Scanner struct {
-	tokens []Token // collected tokens from input
-	length int     // number of tokens in the list
-	pos    int     // current position in the list of tokens
+	head   *Token
+	curr   *Token
+	tail   *Token
+	length int // number of tokens in the list
 }
 
 // Accept checks if the next token matches any of the given types.
 // If there's a match, advances past that token and returns it with true.
 // If no match, position remains unchanged and returns false.
 // Returns false if at end of input.
-func (s *Scanner) Accept(types ...Type) (Token, bool) {
-	if s.pos >= s.length {
-		return Token{}, false
+func (s *Scanner) Accept(types ...Type) (*Token, bool) {
+	if s.curr.Type == EOF {
+		return nil, false
 	}
-	t := s.tokens[s.pos]
+	t := s.curr
 	for _, v := range types {
 		if t.Type == v {
-			s.pos++
+			s.curr = s.curr.next
 			return t, true
 		}
 	}
-	return Token{}, false
+	return nil, false
 }
 
 // Backup steps back one token in the input.
 // Will not back up past the beginning of input.
 func (s *Scanner) Backup() {
-	if s.pos > 0 {
-		s.pos--
+	if s.curr.prev == nil {
+		return
 	}
+	s.curr = s.curr.prev
 }
 
 // Next returns the next token in the input and advances the position.
 // Returns EOF token if at end of input.
-func (s *Scanner) Next() Token {
-	if s.pos >= s.length {
-		return Token{Type: EOF}
+func (s *Scanner) Next() *Token {
+	t := s.curr
+	if s.curr.Type != EOF {
+		s.curr = s.curr.next
 	}
-	token := s.tokens[s.pos]
-	s.pos++
-	return token
+	return t
+}
+
+func (s *Scanner) NumTokens() int {
+	return s.length
 }
 
 // Peek returns the next token in the input without advancing the position.
 // Returns EOF token if at end of input.
-func (s *Scanner) Peek() Token {
-	if s.pos >= s.length {
-		return Token{Type: EOF}
-	}
-	return s.tokens[s.pos]
+func (s *Scanner) Peek() *Token {
+	return s.curr
 }
 
 // PeekNext returns the next-next token in the input without advancing the position.
 // Returns EOF token if there are fewer than 2 tokens remaining.
-func (s *Scanner) PeekNext() Token {
-	if s.pos+1 >= s.length {
-		return Token{Type: EOF}
+func (s *Scanner) PeekNext() *Token {
+	if s.curr.Type == EOF {
+		return s.curr
 	}
-	return s.tokens[s.pos+1]
+	return s.curr.next
 }
 
 // RunOf returns a list of consecutive tokens that match any of the given types.
 // Continues collecting tokens until it encounters one that doesn't match.
 // Returns the collected sequence of matching tokens.
 // Example: given input "a a b c" and type "a", returns ["a", "a"]
-func (s *Scanner) RunOf(types ...Type) []Token {
-	var run []Token
+func (s *Scanner) RunOf(types ...Type) []*Token {
+	var run []*Token
 	for t := s.Peek(); t.Type != EOF; t = s.Peek() {
 		isValid := false
 		for _, v := range types {
@@ -118,8 +128,8 @@ func (s *Scanner) RunOf(types ...Type) []Token {
 // It does not include the token that matches the given type.
 // At worst, it returns the entire input minus the EOF token.
 // Example: given input "a b c d" and type "c", returns ["a", "b"]
-func (s *Scanner) RunTo(types ...Type) []Token {
-	var run []Token
+func (s *Scanner) RunTo(types ...Type) []*Token {
+	var run []*Token
 	for t := s.Peek(); t.Type != EOF; t = s.Peek() {
 		for _, to := range types {
 			if to == t.Type {
@@ -149,10 +159,4 @@ func (s *Scanner) SkipRunOf(types ...Type) int {
 // Returns the number of tokens skipped, excluding the matching token.
 func (s *Scanner) SkipRunTo(types ...Type) int {
 	return len(s.RunTo(types...))
-}
-
-// Tokens returns all tokens collected from the input.
-// The returned slice does not include the EOF token.
-func (s *Scanner) Tokens() []Token {
-	return s.tokens
 }

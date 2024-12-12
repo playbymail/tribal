@@ -10,6 +10,7 @@ const (
 	Ampersand
 	AtSign
 	Backslash
+	BOF
 	Colon
 	Comma
 	Dash
@@ -33,9 +34,25 @@ const (
 type Token struct {
 	Type  Type
 	Value string
+	// implement a linked list for the tokens
+	prev *Token
+	next *Token
 }
 
-func (t Token) String() string {
+func (t *Token) Prev() *Token {
+	if t.Type == BOF {
+		return t
+	}
+	return t.prev
+}
+func (t *Token) Next() *Token {
+	if t.Type == EOF {
+		return t
+	}
+	return t.next
+}
+
+func (t *Token) String() string {
 	switch t.Type {
 	case Ampersand:
 		return "&"
@@ -43,6 +60,8 @@ func (t Token) String() string {
 		return "@"
 	case Backslash:
 		return "\\"
+	case BOF:
+		return ""
 	case Colon:
 		return ":"
 	case Comma:
