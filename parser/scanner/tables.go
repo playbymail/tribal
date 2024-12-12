@@ -13,7 +13,7 @@ func init() {
 		glyphs[ch] = true
 	}
 	// punctuation
-	for _, ch := range []byte(`-/$.()>#,:_`) {
+	for _, ch := range []byte(`&@:,-$.>#();/_`) {
 		glyphs[ch], delimiters[ch] = true, true
 	}
 	glyphs['\\'], delimiters['\\'] = true, true

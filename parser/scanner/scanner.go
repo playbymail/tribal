@@ -3,17 +3,28 @@
 // Package scanner implements a lexical scanner for TribeNet reports.
 package scanner
 
+import "fmt"
+
 // New returns a new scanner for the report input.
 // The list of tokens we buffer never includes EOF.
-func New(input []byte) *Scanner {
+// Version expects a string of the form "899-12" or "902-05."
+func New(input []byte, version string) (*Scanner, error) {
+	var tk Tokenizer
+	switch version {
+	case "":
+		return nil, fmt.Errorf("missing version", version)
+	case "899-12":
+		tk = &tokenizer_899_12{input: input, length: len(input)}
+	default:
+		return nil, fmt.Errorf("%s: unsupported version", version)
+	}
 	s := &Scanner{}
-	tk := &tokenizer{input: input, length: len(input)}
 	token := tk.next()
 	for ; token.Type != EOF; token = tk.next() {
 		s.tokens = append(s.tokens, token)
 	}
 	s.length = len(s.tokens)
-	return s
+	return s, nil
 }
 
 // Scanner tokenizes input bytes into a sequence of tokens.
