@@ -197,3 +197,13 @@ Otherwise, it will include a result starting with "patrolled and found."
 
 *Note*: I think that the order of the results is slightly different from moves and scouts.
 Not sure if settlements are before or after resources.
+
+== Appendix: Grammar
+
+image::railroad/report.svg[]
+
+image::railroad/unit_section_list.svg[]
+
+image::railroad/unit_section.svg[]
+
+image::railroad/unit_header.svg[]

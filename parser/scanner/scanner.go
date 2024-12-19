@@ -1,9 +1,15 @@
 // Copyright (c) 2024 Michael D Henderson. All rights reserved.
 
 // Package scanner implements a lexical scanner for TribeNet reports.
+//
+// The scanner can use state to deal with context-sensitive tokens.
+// For example, the token "SW" can be a direction, terrain, or map grid.
 package scanner
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // New returns a new scanner for the report input.
 // Version expects a string of the form "899-12" or "902-05."
@@ -11,11 +17,11 @@ func New(input []byte, version string) (*Scanner, error) {
 	var tk Tokenizer
 	switch version {
 	case "":
-		return nil, fmt.Errorf("missing version", version)
+		return nil, fmt.Errorf("version: missing version")
 	case "899-12":
 		tk = &tokenizer_899_12{input: input, length: len(input)}
 	default:
-		return nil, fmt.Errorf("%s: unsupported version", version)
+		return nil, fmt.Errorf("version: %s: unsupported version", version)
 	}
 	// create a scanner from the tokenizer.
 	s := &Scanner{
@@ -33,6 +39,10 @@ func New(input []byte, version string) (*Scanner, error) {
 	// ensure that we have an EOF token at the end of the list
 	s.tail.next = &Token{Type: EOF, prev: s.tail}
 	s.tail = s.tail.next
+
+	// pre-process the tokens
+	ApplyPatterns(s.head)
+
 	return s, nil
 }
 
@@ -80,6 +90,32 @@ func (s *Scanner) Next() *Token {
 		s.curr = s.curr.next
 	}
 	return t
+}
+
+func (s *Scanner) NextWithState(state string) *Token {
+	t := s.Next()
+	switch state {
+	case "grid":
+		// accept any two character string that is a valid grid ID
+		if t.Type == Direction && len(t.Value) == 2 {
+			row, column := toupper(t.Value[0]), toupper(t.Value[1])
+			if ('A' <= row && row <= 'Z') && ('A' <= column && column <= 'Z') {
+				return &Token{Type: GridID, Value: fmt.Sprintf("%c%c", row, column)}
+			}
+		}
+		return t
+	case "terrain":
+		if t.Type == Direction && strings.EqualFold("SW", t.Value) {
+			return &Token{Type: Terrain, Value: "SW"}
+		}
+		return t
+	case "unit-id":
+		if t.Type == Number && len(t.Value) == 4 {
+			return &Token{Type: TribeID, Value: t.Value}
+		}
+		return t
+	}
+	panic(fmt.Sprintf("assert(state != %q)", state))
 }
 
 func (s *Scanner) NumTokens() int {
@@ -159,4 +195,18 @@ func (s *Scanner) SkipRunOf(types ...Type) int {
 // Returns the number of tokens skipped, excluding the matching token.
 func (s *Scanner) SkipRunTo(types ...Type) int {
 	return len(s.RunTo(types...))
+}
+
+func tolower(ch byte) byte {
+	if 'A' <= ch && ch <= 'Z' {
+		ch = ch - 'A' + 'a'
+	}
+	return ch
+}
+
+func toupper(ch byte) byte {
+	if 'a' <= ch && ch <= 'z' {
+		ch = ch - 'a' + 'A'
+	}
+	return ch
 }
