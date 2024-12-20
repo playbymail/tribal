@@ -1,12 +1,15 @@
 {
 package units
 
+// Assumptions: the caller has split the input into lines.
+
 // NB: including all the imports makes the pigeon parser generator run more quickly.
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"os"
 	"sort"
@@ -15,6 +18,8 @@ import (
 	"sync"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/playbymail/tribal/adapters"
 	"github.com/playbymail/tribal/parser/ast"
 )
 
@@ -26,39 +31,40 @@ func toAnySlice(v any) []any {
 }
 }
 
-UnitHeading <- u:UnitDeclaration honi:HexOrName* .* EOF {
+// "," ch:CurrentHex "," SP "(" ph:PreviousHex ")"
+UnitHeading <- u:UnitDeclaration "," un:UnitName "," ch:CurrentHex ",(" ph:PreviousHex ")" .* EOF {
     var uht ast.UnitHeading_t
-    uht.Id = u.(ast.UnitId_t)
-
-    for _, hon := range toAnySlice(honi) {
-        switch v := hon.(type) {
-        case ast.CurrentHex_t:
-            if uht.CurrentHex != nil {
-                if uht.CurrentHex.Error == nil {
-                    uht.CurrentHex.Error = ast.ErrMultipleCurrentHexes
-                }
-            } else {
-                uht.CurrentHex = &v
-            }
-        case ast.PreviousHex_t:
-            if uht.PreviousHex != nil {
-                if uht.PreviousHex.Error == nil {
-                    uht.PreviousHex.Error = ast.ErrMultiplePreviousHexes
-                }
-            } else {
-                uht.PreviousHex = &v
-            }
-        case ast.UnitName_t:
-            uht.Name = v
-        case []uint8:
-            log.Printf("unexpected input %q\n", string(v))
-            if uht.Error == nil {
-                uht.Error = ast.ErrUnexpectedInput
-            }
-        default:
-            panic(fmt.Errorf("unexpected type %T", v))
-        }
-    }
+//    uht.Id = u.(ast.UnitId_t)
+//
+//    for _, hon := range toAnySlice(honi) {
+//        switch v := hon.(type) {
+//        case ast.CurrentHex_t:
+//            if uht.CurrentHex != nil {
+//                if uht.CurrentHex.Error == nil {
+//                    uht.CurrentHex.Error = ast.ErrMultipleCurrentHexes
+//                }
+//            } else {
+//                uht.CurrentHex = &v
+//            }
+//        case ast.PreviousHex_t:
+//            if uht.PreviousHex != nil {
+//                if uht.PreviousHex.Error == nil {
+//                    uht.PreviousHex.Error = ast.ErrMultiplePreviousHexes
+//                }
+//            } else {
+//                uht.PreviousHex = &v
+//            }
+//        case ast.UnitName_t:
+//            uht.Name = v
+//        case []uint8:
+//            log.Printf("unexpected input %q\n", string(v))
+//            if uht.Error == nil {
+//                uht.Error = ast.ErrUnexpectedInput
+//            }
+//        default:
+//            panic(fmt.Errorf("unexpected type %T", v))
+//        }
+//    }
     return &uht, nil
 }
 
@@ -94,42 +100,31 @@ TribeUnit <- "tribe" SP DIGIT DIGIT DIGIT DIGIT &"," {
     return ast.UnitId_t(string(c.text[6:10])), nil
 }
 
-HexOrName <- "," ch:CurrentHex {
-    return ch, nil
-} / "," ph:PreviousHex {
-    return ph, nil
-} / "," un:UnitName {
-    return un, nil
-}
-
-UnitName <- (![,] .)* {
+UnitName <- (![,] .)*  &"," {
     return ast.UnitName_t(string(c.text)), nil
 }
 
-CurrentHex <- "current hex = " LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
-    ch := ast.CurrentHex_t{}
-    ch.Coords, ch.Error = tokenToCoords(c.text[14:])
-    return ch, nil
-} / "current hex = ## " DIGIT DIGIT DIGIT DIGIT {
-    ch := ast.CurrentHex_t{IsObscured: true}
-    ch.Coords, ch.Error = tokenToCoords(c.text[14:])
-    return ch, nil
-} / "current hex = n/a" {
-    ch := ast.CurrentHex_t{IsNA: true}
-    return ch, nil
+CurrentHex <- "current hex = " coords:Coordinates {
+    log.Printf("parser: current hex %T\n", coords)
+    return ast.CurrentHex_t{}, nil
 }
 
-PreviousHex <- "(previous hex = ## " DIGIT DIGIT DIGIT DIGIT ")" {
-    ph := ast.PreviousHex_t{IsObscured: true}
-    ph.Coords, ph.Error = tokenToCoords(c.text[16:23])
-    return ph, nil
-} / "(previous hex = " LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT ")" {
-    ph := ast.PreviousHex_t{}
-    ph.Coords, ph.Error = tokenToCoords(c.text[16:23])
-    return ph, nil
-} / "(previous hex = n/a)" {
-    ph := ast.PreviousHex_t{IsNA: true}
-    return ph, nil
+PreviousHex <- "previous hex = " coords:Coordinates {
+    log.Printf("parser: previous hex %T\n", coords)
+    return ast.CurrentHex_t{}, nil
+}
+
+// Coordinates will return an ast.Coordinates_t if possible.
+// Otherwise it will consume up to the next comma.
+
+Coordinates <- LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
+    return adapters.TextToCoordinates(c.text)
+} / "##" SP DIGIT DIGIT DIGIT DIGIT {
+    return adapters.TextToCoordinates(c.text)
+} / "n/a" {
+    return adapters.TextToCoordinates(c.text)
+} / (![,)] .)* {
+    return adapters.TextToCoordinates(c.text)
 }
 
 EOF    = !.

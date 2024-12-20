@@ -18,6 +18,8 @@ import (
 )
 }
 
+// Assumptions: the caller has split the input into lines.
+
 SectionHeader <- ("courier" / "element" / "fleet" / "garrison" / "tribe") SP u:UNIT_ID "," UnitName? ",current hex =" SP ch:COORDS ",(previous hex =" SP ph:COORDS ")" EOF {
     return SectionHeader_t {
         UnitId:      u.(UnitId_t),

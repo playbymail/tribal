@@ -26,24 +26,23 @@ type ClanId_t string
 type UnitId_t string
 type UnitName_t string
 
-type Coords_t struct {
-	GridRow    int   // 1-based, A ... Z -> 1 ... 26
-	GridColumn int   // 1-based, A ... Z -> 1 ... 26
-	Column     int   // 1-based, 1 ... 30
-	Row        int   // 1-based, 1 ... 21
-	Error      error // highest level error encountered while parsing the coordinates
+type Coordinates_t struct {
+	GridRow    int // 1-based, A ... Z -> 1 ... 26
+	GridColumn int // 1-based, A ... Z -> 1 ... 26
+	Column     int // 1-based, 1 ... 30
+	Row        int // 1-based, 1 ... 21
 }
 
 type CurrentHex_t struct {
 	IsNA       bool
 	IsObscured bool
-	Coords     Coords_t
+	Coords     Coordinates_t
 	Error      error // highest level error encountered while parsing the coordinates
 }
 
 type PreviousHex_t struct {
 	IsNA       bool
 	IsObscured bool
-	Coords     Coords_t
+	Coords     Coordinates_t
 	Error      error // highest level error encountered while parsing the coordinates
 }

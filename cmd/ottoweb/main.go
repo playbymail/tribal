@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"github.com/playbymail/tribal/norm"
+	"github.com/playbymail/tribal/parser/units"
 	"github.com/playbymail/tribal/section"
 	"log"
 	"os"
@@ -45,7 +46,7 @@ func run(path string) error {
 	// split the lines into sections
 	now = time.Now()
 	sections := section.Split(lines)
-	log.Printf("split                      %8d lines into %8d sections in %v", len(lines), len(sections), time.Since(now))
+	log.Printf("sectioned                  %8d lines into %8d sections in %v", len(lines), len(sections), time.Since(now))
 
 	now = time.Now()
 	err = dumpSections(sections, "9999-12.xxxx.sections.txt")
@@ -53,47 +54,25 @@ func run(path string) error {
 		return err
 	}
 	log.Printf("dumped                     %8d sections in %v", len(sections), time.Since(now))
+
+	// parse the sections, returning the map and all errors
+	now = time.Now()
+	for n, s := range sections {
+		uht := units.ParseUnitHeading("path", s.Header)
+		if uht == nil {
+			log.Printf("not a unit heading: %q", s.Header)
+		} else {
+			log.Printf("unit heading: %+v", *uht)
+		}
+		if n > 3 {
+			break
+		}
+	}
+	log.Printf("parsed                     %8d sections in %v", len(sections), time.Since(now))
+
 	return nil
 }
 
 func dumpSections(sections []*section.Section, path string) error {
-	b := &bytes.Buffer{}
-	for _, s := range sections {
-		b.Write(s.Header)
-		b.WriteByte('\n')
-		if len(s.Turn) != 0 {
-			b.Write(s.Turn)
-			b.WriteByte('\n')
-		}
-		if len(s.Moves.Movement) != 0 {
-			b.Write(s.Moves.Movement)
-			b.WriteByte('\n')
-		}
-		if len(s.Moves.Follows) != 0 {
-			b.Write(s.Moves.Follows)
-			b.WriteByte('\n')
-		}
-		if len(s.Moves.GoesTo) != 0 {
-			b.Write(s.Moves.GoesTo)
-			b.WriteByte('\n')
-		}
-		if len(s.Moves.Fleet) != 0 {
-			b.Write(s.Moves.Fleet)
-			b.WriteByte('\n')
-		}
-		if len(s.Moves.Scouts) != 0 {
-			for _, scout := range s.Moves.Scouts {
-				if len(scout) == 0 {
-					continue
-				}
-				b.Write(scout)
-				b.WriteByte('\n')
-			}
-		}
-		if len(s.Status) != 0 {
-			b.Write(s.Status)
-			b.WriteByte('\n')
-		}
-	}
-	return os.WriteFile(path, b.Bytes(), 0644)
+	return os.WriteFile(path, section.DumpSections(sections), 0644)
 }
