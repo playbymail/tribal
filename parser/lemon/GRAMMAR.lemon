@@ -1,9 +1,9 @@
 %start_symbol report
 
-report ::= unit_section_list .
+report ::= unit_sections .
 
-unit_section_list ::= unit_section_list unit_section .
-unit_section_list ::= unit_section .
+unit_sections ::= unit_sections unit_section .
+unit_sections ::= unit_section .
 
 unit_section ::= unit_header unit_body .
 

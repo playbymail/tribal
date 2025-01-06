@@ -5,8 +5,8 @@ package main
 import (
 	"bytes"
 	"github.com/playbymail/tribal/norm"
+	"github.com/playbymail/tribal/parser/lemon"
 	"github.com/playbymail/tribal/parser/scanner"
-	"github.com/playbymail/tribal/parser/units"
 	"github.com/playbymail/tribal/section"
 	"log"
 	"os"
@@ -126,12 +126,12 @@ func run(path string) error {
 	// parse the sections, returning the map and all errors
 	now = time.Now()
 	for n, s := range sections {
-		uht := units.ParseUnitHeading("path", s.Header)
-		if uht == nil {
-			log.Printf("not a unit heading: %q", s.Header)
-		} else {
-			log.Printf("unit heading: %+v", *uht)
+		p := lemon.ParseAlloc(s)
+		root, err := p.Parse()
+		if err != nil {
+			return err
 		}
+		log.Printf("root: %+v\n", *root)
 		if n > 3 {
 			break
 		}

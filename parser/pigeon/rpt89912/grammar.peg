@@ -1,0 +1,56 @@
+{
+package rpt89912
+
+// NB: including all the imports make the parser generator run a bit more quickly.
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/playbymail/tribal/parser/ast"
+)
+}
+
+UnitId <- ("courier" / "element" / "fleet" / "garrison" / "tribe") SP u:UNIT_ID "," {
+    return u, nil
+}
+
+UNIT_ID <- DIGIT DIGIT DIGIT DIGIT ([cefg] [1-9])? {
+    u := ast.Unit_t {
+        No: int(c.text[0] - '0') * 1000 + int(c.text[1] - '0') * 100 + int(c.text[2] - '0') * 10 + int(c.text[3] - '0'),
+    }
+    if len(c.text) == 4 {
+        u.Kind = ast.Tribe
+        u.Seq = int(c.text[0] - '0')
+    } else {
+        switch c.text[4] {
+        case 'c':
+            u.Kind = ast.Courier
+        case 'e':
+            u.Kind = ast.Element
+        case 'f':
+            u.Kind = ast.Fleet
+        case 'g':
+            u.Kind = ast.Garrison
+        default:
+            panic(fmt.Sprintf("assert(kind != '%c')", c.text[6]))
+        }
+        u.Seq = int(c.text[5] - '0')
+    }
+    return u, nil
+}
+
+EOF    = !.
+DIGIT  = [0-9]
+LETTER = [a-z]
+SP     = [ \t]+
+_      = [ \t]*

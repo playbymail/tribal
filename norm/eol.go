@@ -3,7 +3,7 @@
 package norm
 
 const (
-	// ASCII codes for carriage return and line feed.
+	// CR and LF are ASCII codes for carriage return and line feed.
 	CR = '\r'
 	LF = '\n'
 )

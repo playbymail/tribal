@@ -22,6 +22,22 @@ type UnitHeading_t struct {
 	Error       error          // highest level error encountered while parsing the unit
 }
 
+type Unit_t struct {
+	Kind UnitKind_t
+	No   int // range 1 ... 9999
+	Seq  int // range 0 ... 9
+}
+
+type UnitKind_t int
+
+const (
+	Tribe UnitKind_t = iota
+	Courier
+	Element
+	Fleet
+	Garrison
+)
+
 type ClanId_t string
 type UnitId_t string
 type UnitName_t string
