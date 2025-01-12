@@ -9,7 +9,6 @@ import (
 	"github.com/playbymail/tribal/passage"
 	"github.com/playbymail/tribal/resource"
 	"github.com/playbymail/tribal/terrain"
-	"log"
 	"regexp"
 )
 
@@ -17,51 +16,67 @@ var (
 	reUnitStatus = regexp.MustCompile(`^\d{4}([cefg][1-9])? status:`)
 )
 
+// Parse parses the status of a unit.
+// The status line is required, but it's sometimes missing in setup reports.
+//
+// Per the spec, the line should look like this:
+//
+//	UnitId " status:" TerrainName (,SettlementName)? (,Resources)? (,Neighbors)? (,Passages)? (,Encounters)?
 func Parse(path string, input []byte) (*domains.Status_t, error) {
 	var s domains.Status_t
 
 	// expect unit id followed by " status:"
-	match := reUnitStatus.Find(input)
-	log.Printf("\n\n\nmatch %v input %q\n", string(match), string(input))
-	if match == nil {
+	if match := reUnitStatus.Find(input); match == nil {
 		return nil, domains.ErrInvalidStatusPrefix
+	} else {
+		s.Unit = domains.UnitId_t(string(match))
+		input = input[len(match):] // consume the match
 	}
-	s.Unit = domains.UnitId_t(string(match))
-	input = input[len(match):] // consume the match
 
-	// expect terrain type followed by comma or end of input
-	terrainType, rest, ok := acceptTerrainName(input)
-	if !ok {
+	// expect terrain name followed by comma or end of input
+	if terrainType, rest, ok := expectTerrainName(input); !ok {
 		return nil, domains.ErrMissingTerrainType
-	}
-	s.Tile.Terrain = terrainType
-	input = rest
-
-	// optional settlement name.
-	if settlementName, rest, ok := acceptSettlementName(input); ok {
-		s.Tile.SettlementName = settlementName
+	} else {
+		s.Tile.Terrain = terrainType
 		input = rest
 	}
 
-	// optional resources
+	// remaining fields are optional
+	s.Tile.SettlementName, input = acceptOptionalSettlementName(input)
 	s.Tile.Resources, input = acceptOptionalResources(input)
 	s.Tile.Neighbors, input = acceptOptionalNeighbors(input)
 	s.Tile.Passages, input = acceptOptionalPassages(input)
+	s.Tile.Encounters, input = acceptOptionalEncounters(input)
 
-	// optional encounters
-	if encounters, rest, ok := acceptEncounters(input); ok {
-		for _, encounter := range encounters {
-			s.Tile.Encounters = append(s.Tile.Encounters, encounter)
-		}
-		input = rest
-	}
-
-	log.Printf("status: remaining input %q\n", input)
+	// if we have something left over, we had invalid input.
+	// this will eventually be reported to the user.
 	if len(input) != 0 {
 		s.Errors.ExcessInput = string(input)
 	}
 
 	return &s, nil
+}
+
+var (
+	reUnitIdElement = regexp.MustCompile(`^[, ](\d{4}(?:[cefg][1-9])?)(?:[ ,]|$)`)
+)
+
+func acceptEncounter(input []byte) (domains.UnitId_t, []byte, bool) {
+	match := reUnitIdElement.FindSubmatch(input)
+	if match == nil { // did not find unit id
+		return "", input, false
+	}
+	unit, rest := match[1], input[len(match[1])+1:] // capture unit id and advance to the delimiter
+	return domains.UnitId_t(unit), rest, true
+}
+
+func acceptOptionalEncounters(input []byte) (list []domains.UnitId_t, rest []byte) {
+	unit, rest, ok := acceptEncounter(input)
+	for ok {
+		list = append(list, unit)
+		unit, rest, ok = acceptEncounter(rest)
+	}
+	return list, rest
 }
 
 var (
@@ -171,54 +186,49 @@ func acceptOptionalResources(input []byte) (list []resource.Resource_e, rest []b
 	return list, rest
 }
 
-// optional settlement name. this test is horrible.
-// if the next item isn't a resource or a neighbor or a unit, then it's a settlement name.
+// settlement name. this test is horrible.
+// if the next item isn't something else, then it's a settlement name.
 func acceptSettlementName(input []byte) (string, []byte, bool) {
-	//log.Printf("acceptSettlementName: input %q\n", input)
 	if len(input) == 0 || input[0] != ',' {
 		return "", input, false
 	} else if _, _, ok := acceptResource(input); ok {
-		//log.Printf("acceptSettlementName: input %q *** resource\n", input)
 		return "", input, false
 	} else if _, _, ok = acceptNeighborTerrain(input); ok {
-		//log.Printf("acceptSettlementName: input %q *** neighbor\n", input)
 		return "", input, false
 	} else if _, _, ok = acceptPassage(input); ok {
-		//log.Printf("acceptSettlementName: input %q *** passages\n", input)
 		return "", input, false
-	} else if _, _, ok = acceptEncounters(input); ok {
-		//log.Printf("acceptSettlementName: input %q *** encounters\n", input)
+	} else if _, _, ok = acceptEncounter(input); ok {
 		return "", input, false
 	}
-	//log.Printf("acceptSettlementName: input %q <<--\n", input)
-	var word, rest []byte
+	var name, rest []byte
 	rest = input[1:] // consume the comma
 	if idx := bytes.Index(rest, []byte{','}); idx == -1 {
-		// no comma found, use entire input as settlement name
-		word, rest = rest, nil
+		name, rest = rest, nil // no comma found, use entire input as settlement name
 	} else {
-		word, rest = rest[:idx], rest[idx:]
+		name, rest = rest[:idx], rest[idx:]
 	}
-	//log.Printf("acceptSettlementName: word %q rest %q\n", word, rest)
-	return string(word), rest, true
+	return string(name), rest, true
 }
 
-// accept terrain type followed by comma or end of input
-func acceptTerrainName(input []byte) (terrain.Terrain_e, []byte, bool) {
-	var word, rest []byte
-	idx := bytes.Index(input, []byte{','})
-	if idx == -1 {
-		// no comma found, use entire input as terrain name
-		word, rest = input, nil
-	} else {
-		word, rest = input[:idx], input[idx:]
-	}
-	//log.Printf("acceptTerrainName: %q %q\n", word, rest)
-	// is the word a terrain name?
-	enum, ok := terrain.LongTerrainNames[string(word)]
+func acceptOptionalSettlementName(input []byte) (name string, rest []byte) {
+	name, rest, ok := acceptSettlementName(input)
 	if !ok {
-		// did not find terrain name
-		return 0, input, false
+		return "", input
+	}
+	return name, rest
+}
+
+// expect terrain name followed by comma or end of input
+func expectTerrainName(input []byte) (terrain.Terrain_e, []byte, bool) {
+	var name, rest []byte
+	if idx := bytes.Index(input, []byte{','}); idx == -1 {
+		name, rest = input, nil // no comma found, use entire input as terrain name
+	} else {
+		name, rest = input[:idx], input[idx:]
+	}
+	enum, ok := terrain.LongTerrainNames[string(name)]
+	if !ok { // did not find terrain name
+		return terrain.Blank, input, false
 	}
 	return enum, rest, true
 }
@@ -243,10 +253,6 @@ func acceptDirections(input []byte) ([]direction.Direction_e, []byte, bool) {
 	return list, input, len(list) != 0
 }
 
-var (
-	reUnitIdElement = regexp.MustCompile(`^[, ](\d{4}(?:[cefg][1-9])?)(?:[ ,]|$)`)
-)
-
 // accept list of unit ids.
 // per the spec, the list is (space unit id)* and terminated by a comma (or end of input).
 // but because of typos, we'll accept commas or spaces for delimiters and termination by
@@ -254,7 +260,7 @@ var (
 func acceptEncounters(input []byte) ([]domains.UnitId_t, []byte, bool) {
 	var list []domains.UnitId_t
 	for match := reUnitIdElement.FindSubmatch(input); match != nil; match = reUnitIdElement.FindSubmatch(input) {
-		unit, rest := match[1], input[len(match[1])+1:] // capture direction and advance to the delimiter
+		unit, rest := match[1], input[len(match[1])+1:] // capture unit id and advance to the delimiter
 		list, input = append(list, domains.UnitId_t(unit)), rest
 	}
 	return list, input, len(list) > 0
