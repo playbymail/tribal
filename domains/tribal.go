@@ -16,6 +16,7 @@ type Unit_t struct {
 	PreviousHex Coordinates_t // location of unit at the beginning of the turn
 	CurrentHex  Coordinates_t // location of unit at the end of the turn
 	Turn        TurnId_t      // turn number
+	Moves       *Moves_t      // moves made by the unit
 	Status      *Status_t     // status of the unit
 	Error       error         // highest level error encountered while parsing the unit
 }
@@ -38,6 +39,12 @@ func (c Coordinates_t) String() string {
 		return fmt.Sprintf("## %02d%02d", c.Column, c.Row)
 	}
 	return fmt.Sprintf("%c%c %02d%02d", c.GridRow+'A'-1, c.GridColumn+'A'-1, c.Column, c.Row)
+}
+
+type Moves_t struct {
+	Follows UnitId_t
+	GoesTo  *Coordinates_t
+	Error   error
 }
 
 type Neighbor_t struct {

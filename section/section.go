@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/playbymail/tribal/domains"
+	"github.com/playbymail/tribal/section/follows"
+	"github.com/playbymail/tribal/section/goes_to"
 	"github.com/playbymail/tribal/section/status"
 	"github.com/playbymail/tribal/section/turns"
 	"github.com/playbymail/tribal/section/units"
@@ -50,6 +52,10 @@ func (s *Section) Less(s2 *Section) bool {
 	return false
 }
 
+const (
+	debugScoutLines = false
+)
+
 func (s *Section) Parse(path string) error {
 	// sort the lines before parsing.
 	s.Sort()
@@ -87,29 +93,42 @@ func (s *Section) Parse(path string) error {
 	}
 
 	// parse movement line. note that we will never parse more than one movement line.
-	// we arbitrarily choose to test in order of follows, goes to, unit and then fleet moves.
+	// the order we check them in is arbitrary.
+	if s.Lines.UnitFollows != nil {
+		if u, err := follows.Parse(path, s.Lines.UnitFollows); err != nil {
+			s.Unit.Moves = &domains.Moves_t{Error: err}
+		} else {
+			s.Unit.Moves = &domains.Moves_t{Follows: u}
+		}
+	} else if s.Lines.UnitGoesTo != nil {
+		if c, err := goes_to.Parse(path, s.Lines.UnitGoesTo); err != nil {
+			s.Unit.Moves = &domains.Moves_t{Error: err}
+		} else {
+			s.Unit.Moves = &domains.Moves_t{GoesTo: c}
+		}
+	} else if s.Lines.FleetMoves != nil {
+	} else if s.Lines.UnitMoves != nil {
+	}
 
-	// next lines should be the scouting lines
+	// scouting lines are optional.
+	for no, line := range s.Lines.ScoutLines {
+		if debugScoutLines {
+			log.Printf("section: scout line %d: %q", no+1, line)
+		}
+	}
 
 	// status line is optional, even though it's required in the spec.
 	// if present, it must start with the unit id.
 	if s.Lines.Status == nil {
 		// should be an error but the setup reports often don't include it.
-	} else if !bytes.HasPrefix(s.Lines.Status, []byte(fmt.Sprintf("%s status:", s.Unit.Id))) {
-		s.Errors = append(s.Errors, domains.ErrInvalidStatusPrefix)
-		log.Printf("section: status %q: invalid prefix", s.Lines.Status)
+	} else if us, err := status.Parse(path, s.Lines.Status); err != nil {
+		s.Errors = append(s.Errors, err)
+		log.Printf("section: status %q: parse error %v\n", s.Lines.Status, err)
 	} else {
-		var err error
-		if s.Unit.Status, err = status.Parse(path, s.Lines.Status); err != nil {
-			s.Errors = append(s.Errors, err)
-			log.Printf("section: status %q: parse error %v\n", s.Lines.Status, err)
-		} else {
-			log.Printf("section: status %q: %+v", s.Lines.Status, s.Unit.Status)
-			log.Printf("section: status tile %+v", s.Unit.Status.Tile)
-		}
+		s.Unit.Status = us
 	}
 
-	log.Printf("section: %q\n\t%+v", s.Lines.Unit, *s.Unit)
+	log.Printf("section: %q\n%+v\n%+v\n%+v\n", s.Lines.Unit, *s.Unit, *s.Unit.Status, *s.Unit.Moves)
 
 	return nil
 }

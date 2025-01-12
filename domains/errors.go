@@ -7,6 +7,8 @@ const (
 	ErrInvalidMonth          Error = "invalid month"
 	ErrInvalidStatusPrefix   Error = "invalid status prefix"
 	ErrInvalidTurnNo         Error = "invalid turn number"
+	ErrInvalidUnitFollows    Error = "invalid unit follows"
+	ErrInvalidUnitGoesTo     Error = "invalid unit goes to"
 	ErrInvalidYear           Error = "invalid year"
 	ErrMissingTerrainType    Error = "missing terrain type"
 	ErrMultipleCurrentHexes  Error = "multiple current hexes"
