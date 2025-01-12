@@ -105,6 +105,7 @@ func (s *Section) Parse(path string) error {
 			log.Printf("section: status %q: parse error %v\n", s.Lines.Status, err)
 		} else {
 			log.Printf("section: status %q: %+v", s.Lines.Status, s.Unit.Status)
+			log.Printf("section: status tile %+v", s.Unit.Status.Tile)
 		}
 	}
 

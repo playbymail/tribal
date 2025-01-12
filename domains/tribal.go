@@ -5,6 +5,7 @@ package domains
 import (
 	"fmt"
 	"github.com/playbymail/tribal/direction"
+	"github.com/playbymail/tribal/passage"
 	"github.com/playbymail/tribal/resource"
 	"github.com/playbymail/tribal/terrain"
 )
@@ -40,24 +41,31 @@ func (c Coordinates_t) String() string {
 }
 
 type Neighbor_t struct {
-	Direction direction.Direction_e
 	Terrain   terrain.Terrain_e
+	Direction direction.Direction_e
+}
+
+type Passage_t struct {
+	Passage   passage.Passage_e
+	Direction direction.Direction_e
 }
 
 type Status_t struct {
-	Unit           UnitId_t
-	Terrain        terrain.Terrain_e
-	SettlementName string
-	Resources      resource.Resource_e
-	Encounters     []UnitId_t
+	Unit   UnitId_t
+	Tile   Tile_t
+	Errors struct {
+		ExcessInput string
+	}
 }
 
 type Tile_t struct {
-	Coordinates Coordinates_t
-	Terrain     terrain.Terrain_e
-	Neighbors   []Neighbor_t
-	Resources   resource.Resource_e
-	Units       []Unit_t
+	Coordinates    Coordinates_t
+	Terrain        terrain.Terrain_e
+	SettlementName string
+	Resources      []resource.Resource_e
+	Neighbors      []Neighbor_t
+	Passages       []Passage_t
+	Encounters     []UnitId_t
 }
 
 type Turn_t struct {
