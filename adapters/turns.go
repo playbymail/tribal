@@ -5,7 +5,7 @@ package adapters
 import "github.com/playbymail/tribal"
 
 func IntToTurnId(i int) (tribal.TurnId_t, bool) {
-	if !(0 < i && i < 9999) {
+	if !(0 <= i && i < 9999) {
 		return tribal.TurnId_t(0), false
 	}
 	return tribal.TurnId_t(i), true

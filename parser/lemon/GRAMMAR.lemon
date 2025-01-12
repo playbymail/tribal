@@ -1,48 +1,64 @@
 %start_symbol report
 
+/* report is an entire turn report file, usually containing multiple unit sections. */
 report ::= unit_sections .
 
 unit_sections ::= unit_sections unit_section .
 unit_sections ::= unit_section .
 
+/* unit_section contains the location, turn data, movements, and results for a single unit */
 unit_section ::= unit_header unit_body .
 
+/* unit_header is the first line of a unit section.
+ * all lines between this line and the next unit_header are associated with this unit.
+ */
 unit_header ::=
     unit_header_id COMMA unit_name COMMA current_hex COMMA LPAREN previous_hex RPAREN .
 
+/* unit_header_id contains a keyword for the unit type (courier, garrison, etc) and the unit id. */
 unit_header_id ::= COURIER  COURIER_UNIT_ID  .
 unit_header_id ::= ELEMENT  ELEMENT_UNIT_ID  .
 unit_header_id ::= FLEET    FLEET_UNIT_ID    .
 unit_header_id ::= GARRISON GARRISON_UNIT_ID .
 unit_header_id ::= TRIBE    TRIBE_UNIT_ID    .
 
+/* unit_name is sometimes a comment for the gm */
 unit_name ::= UNIT_NAME .
 unit_name ::= .
 
+/* current_hex is the unit's location at the end of the turn. */
 current_hex  ::= CURRENT_HEX  EQUALS GRID_LOCATION .
+
+/* previous_hex is the unit's location at the start of the turn. */
 previous_hex ::= PREVIOUS_HEX EQUALS GRID_LOCATION .
 
+/* unit_body is the lines between unit_headers (or end of file for the last unit in a report). */
 unit_body ::= unit_body_line_list.
 unit_body ::= .  /* empty is valid */
 
 unit_body_line_list ::= unit_body_line_list unit_body_line.
 unit_body_line_list ::= unit_body_line.
 
+/* unit_body_line is a line between a unit_header and the next unit_header or end of input. */
 unit_body_line ::= turn_line.
 unit_body_line ::= movement.
 unit_body_line ::= status_line.
 
+/* movement is either a tribe movement, follows, goes to, or a fleet movement. */
 movement ::= tribe_movement .
 movement ::= TRIBE FOLLOWS UNIT_ID  .
 movement ::= TRIBE GOES_TO GRID_LOCATION .
 movement ::= fleet_movement .
 
+/* tribe_movement is a move that may includes results. */
 tribe_movement ::= TRIBE MOVEMENT COLON MOVE tribe_steps .
 tribe_movement ::= TRIBE MOVEMENT COLON MOVE .
 
+/* tribe_steps are the steps a move separated by backslashes. */
 tribe_steps ::= tribe_steps BACKSLASH tribe_step .
 tribe_steps ::= tribe_step .
 
+/* tribe_step is the result of a single step in a move. */
 tribe_step ::= DIRECTION DASH TERRAIN tribe_step_results .
 tribe_step ::= DIRECTION DASH TERRAIN .
 tribe_step ::= CANT_MOVE_INTO BLOCKER TO DIRECTION OF_HEX .

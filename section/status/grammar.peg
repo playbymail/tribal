@@ -1,0 +1,32 @@
+{
+package status
+
+// NB: including all the imports makes the pigeon parser generator run more quickly.
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/playbymail/tribal/domains"
+)
+}
+
+StatusLine <- u:UNIT_ID " status:" Terrain optionalSettlement optionalResources optionalNeighborList optionalUnitsList_ results:ToEOL EOF {
+    mt := Movement_t{
+        Type: unit_movement.Status,
+        UnitId: u.(UnitId_t),
+    }
+    if results != nil {
+        mt.Text = bdup(results.([]byte))
+    }
+    return mt, nil
+}

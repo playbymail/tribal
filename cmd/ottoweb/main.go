@@ -3,8 +3,6 @@
 package main
 
 import (
-	"bytes"
-	"github.com/playbymail/tribal/norm"
 	"github.com/playbymail/tribal/parser/units"
 	"github.com/playbymail/tribal/section"
 	"log"
@@ -33,20 +31,10 @@ func run(path string) error {
 	}
 	log.Printf("read                       %8d bytes in %v", len(data), time.Since(now))
 
-	// normalize the line endings
+	// split the input into sections
 	now = time.Now()
-	data = norm.LineEndings(data)
-	log.Printf("normalized line endings of %8d bytes in %v", len(data), time.Since(now))
-
-	// split the data into lines
-	now = time.Now()
-	lines := bytes.Split(data, []byte{'\n'})
-	log.Printf("split                      %8d bytes into %8d lines    in %v", len(data), len(lines), time.Since(now))
-
-	// split the lines into sections
-	now = time.Now()
-	sections := section.Split(lines)
-	log.Printf("sectioned                  %8d lines into %8d sections in %v", len(lines), len(sections), time.Since(now))
+	sections := section.Split(data)
+	log.Printf("sectioned                  %8d lines into %8d sections in %v", 1, len(sections), time.Since(now))
 
 	now = time.Now()
 	err = dumpSections(sections, "9999-12.xxxx.sections.txt")

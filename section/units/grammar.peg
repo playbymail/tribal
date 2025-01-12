@@ -1,0 +1,64 @@
+{
+package units
+
+// Assumptions: the caller has split the input into lines.
+
+// NB: including all the imports makes the pigeon parser generator run more quickly.
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/playbymail/tribal/adapters"
+	"github.com/playbymail/tribal/domains"
+)
+}
+
+UnitHeading <- uid:UnitDeclaration "," un:UnitName ",current hex = " ch:Coordinates ",(previous hex = " ph:Coordinates ")" .* EOF {
+    return &domains.Unit_t{
+        Id: uid.(domains.UnitId_t),
+        Name: un.(domains.UnitName_t),
+        CurrentHex: ch.(domains.Coordinates_t),
+        PreviousHex: ph.(domains.Coordinates_t),
+    }, nil
+}
+
+UnitDeclaration <- "courier " DIGIT DIGIT DIGIT DIGIT "c" [1-9] {
+    return domains.UnitId_t(string(c.text[8:8+6])), nil
+} / "element " DIGIT DIGIT DIGIT DIGIT "e" [1-9] {
+    return domains.UnitId_t(string(c.text[8:8+6])), nil
+} / "fleet " DIGIT DIGIT DIGIT DIGIT "f" [1-9] {
+    return domains.UnitId_t(string(c.text[6:6+6])), nil
+} / "garrison " DIGIT DIGIT DIGIT DIGIT "g" [1-9] {
+    return domains.UnitId_t(string(c.text[9:9+6])), nil
+} / "tribe " DIGIT DIGIT DIGIT DIGIT {
+    return domains.UnitId_t(string(c.text[6:6+4])), nil
+}
+
+UnitName <- (![,] .)*  {
+    return domains.UnitName_t(string(c.text)), nil
+}
+
+Coordinates <- LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
+    return adapters.TextToCoordinates(c.text)
+} / "## " DIGIT DIGIT DIGIT DIGIT {
+    return adapters.TextToCoordinates(c.text)
+} / "n/a" {
+    return adapters.TextToCoordinates(c.text)
+}
+
+EOF    = !.
+DIGIT  = [0-9]
+LETTER = [a-z]
+SP     = [ \t]+
+_      = [ \t]*

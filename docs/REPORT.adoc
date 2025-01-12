@@ -195,6 +195,10 @@ Otherwise, it will include a result starting with "patrolled and found."
 3987g1 Status: CONIFER HILLS,Coal,O SW,2987e1 3987g1
 ----
 
+The status line looks like
+
+    Unit " status:" Terrain optionalSettlementName optionalResource optionalNeighborList optionalUnitList
+
 *Note*: I think that the order of the results is slightly different from moves and scouts.
 Not sure if settlements are before or after resources.
 
