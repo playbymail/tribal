@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	reUnitStatus = regexp.MustCompile(`^\d{4}([cefg][1-9])? status:`)
+	reStatusPrefix = regexp.MustCompile(`^\d{4}([cefg][1-9])? status:`)
 )
 
 // Parse parses the status of a unit.
@@ -21,12 +21,12 @@ var (
 //
 // Per the spec, the line should look like this:
 //
-//	UnitId " status:" TerrainName (,SettlementName)? (,Resources)? (,Neighbors)? (,Passages)? (,Encounters)?
+//	UnitId " status:" TerrainName (,(SpecialHex|VillageName))? (,Resources)? (,Neighbors)? (,Passages)? (,Units)?
 func Parse(path string, input []byte) (*domains.Status_t, error) {
 	var s domains.Status_t
 
 	// expect unit id followed by " status:"
-	if match := reUnitStatus.Find(input); match == nil {
+	if match := reStatusPrefix.Find(input); match == nil {
 		return nil, domains.ErrInvalidStatusPrefix
 	} else {
 		s.Unit = domains.UnitId_t(string(match))

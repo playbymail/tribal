@@ -1,0 +1,23 @@
+Report <- Unit*
+
+Unit <- Header Turn MoveResults? ScoutResults? Status?
+
+MoveResults <- UnitFollows | UnitGoesTo | UnitMoves | FleetMoves
+
+UnitFollows <- "tribe follows" UnitId
+
+UnitGoesTo  <- "tribe goes to" Coordinates
+
+UnitMoves <- "tribe movement:move" (BACKSLASH Success)* (BACKSLASH Fail)?
+
+Success    <- TerrainCode DASH Direction (COMMA Neighbor)* (COMMA Passage)* (COMMA (SpecialHex | VillageName))?
+
+Fail       <- FailMP | FailNoFord | FailShore | FailWagons
+FailMP     <- "not enough m.p's to move to" Direction "into" TerrainName
+FailNoFord <- "no ford on"    (Canal|River) "to" Direction "of hex"
+FailShore  <- "can't move on" (Lake|Ocean)  "to" Direction "of hex"
+FailWagons <- "cannot move wagons into swamp/jungle hill to" Direction "of hex"
+
+FleetMoves  <- TODO
+
+Status <- UnitId "status:" TerrainName (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Neighbors)* (COMMA Passages)* (COMMA Units)*

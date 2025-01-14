@@ -77,7 +77,7 @@ func (s *Section) Parse(path string) error {
 		//unitHeading.CurrentHex = uh.CurrentHex
 		//unitHeading.PreviousHex = uh.PreviousHex
 		//unitHeading.Error = uh.Error
-		log.Printf("section: header %q: unit heading: %+v", s.Lines.Unit, *s.Unit)
+		//log.Printf("section: header %q: unit heading: %+v", s.Lines.Unit, *s.Unit)
 	}
 
 	// turn line is optional, even though it's required in the spec
@@ -88,7 +88,7 @@ func (s *Section) Parse(path string) error {
 		} else if s.Unit.Turn, ok = v.(domains.TurnId_t); !ok {
 			panic(fmt.Sprintf("assert(%T == TurnId_t)", v))
 		} else {
-			log.Printf("section: turn %q: %+v", s.Lines.Turn, s.Unit.Turn)
+			//log.Printf("section: turn %q: %+v", s.Lines.Turn, s.Unit.Turn)
 		}
 	}
 
@@ -107,7 +107,9 @@ func (s *Section) Parse(path string) error {
 			s.Unit.Moves = &domains.Moves_t{GoesTo: c}
 		}
 	} else if s.Lines.FleetMoves != nil {
+		panic("!implemented")
 	} else if s.Lines.UnitMoves != nil {
+		log.Printf("section: unit moves %q\n", s.Lines.UnitMoves)
 	}
 
 	// scouting lines are optional.
@@ -128,7 +130,16 @@ func (s *Section) Parse(path string) error {
 		s.Unit.Status = us
 	}
 
-	log.Printf("section: %q\n%+v\n%+v\n%+v\n", s.Lines.Unit, *s.Unit, *s.Unit.Status, *s.Unit.Moves)
+	if s.Unit != nil {
+		//log.Printf("section: %q\n", s.Lines.Unit)
+		//log.Printf("section: unit\n%+v\n", *s.Unit)
+		if s.Unit.Status != nil {
+			//log.Printf("section: status\n%+v\n", *s.Unit.Status)
+		}
+		if s.Unit.Moves != nil {
+			log.Printf("section: moves\n%+v\n", *s.Unit.Moves)
+		}
+	}
 
 	return nil
 }

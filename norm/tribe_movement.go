@@ -82,10 +82,14 @@ func ScoutMovement(line []byte) []byte {
 	return line
 }
 
-// TribeMovement processes a tribe movement line to fix issues with backslash
-// or direction followed by a unit ID. Caller must have already compressed spaces
-// on the input line and forced to lowercase.
+// TribeMovement processes a tribe movement line to fix issues with backslash or direction followed by a unit ID.
+// Caller must have already compressed spaces on the input line and forced to lowercase.
 func TribeMovement(line []byte) []byte {
+	// force a backslash after the word moves
+	if len(line) > 19 && line[19] == ' ' { // 	"tribe movement:move"
+		line[19] = '\\'
+	}
+
 	// replace backslash+dash with backslash
 	line = reBackslashDash.ReplaceAll(line, []byte{'\\'})
 

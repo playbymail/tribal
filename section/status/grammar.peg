@@ -1,1 +1,1 @@
-StatusLine <- UnitId " status:" Terrain (COMMA Settlement)? (COMMA Resources)? (COMMA Neighbors)? (COMMA Passages)? (COMMA Encounters)? EOF
+StatusLine <- UnitId " status:" Terrain (COMMA Settlement)* (COMMA Resources)* (COMMA Neighbors)? (COMMA Passages)* (COMMA Encounters)* EOF
