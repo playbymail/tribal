@@ -5,7 +5,6 @@ package domains
 const (
 	ErrInvalidCoordinates    Error = "invalid coordinates"
 	ErrInvalidMonth          Error = "invalid month"
-	ErrInvalidStatusPrefix   Error = "invalid status prefix"
 	ErrInvalidTurnNo         Error = "invalid turn number"
 	ErrInvalidUnitFollows    Error = "invalid unit follows"
 	ErrInvalidUnitGoesTo     Error = "invalid unit goes to"
@@ -14,6 +13,8 @@ const (
 	ErrMultipleCurrentHexes  Error = "multiple current hexes"
 	ErrMultiplePreviousHexes Error = "multiple previous hexes"
 	ErrNoMatch               Error = "no match"
+	ErrNotTribeMovementLine  Error = "not a tribe movement line"
+	ErrNotUnitStatusLine     Error = "not a unit status line"
 	ErrTooFewFields          Error = "too few fields"
 	ErrTooManyFields         Error = "too many fields"
 	ErrTurnNoMismatch        Error = "turn number mismatch"

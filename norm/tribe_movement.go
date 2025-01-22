@@ -72,6 +72,14 @@ func ScoutMovement(line []byte) []byte {
 	line = reRunOfBackslashes.ReplaceAll(line, []byte{'\\'})
 	line = reRunOfComma.ReplaceAll(line, []byte{','})
 
+	// change the separator for nothing of interest
+	if idx := bytes.Index(line, []byte(`,nothing of interest found`)); idx != -1 {
+		line[idx] = '\\'
+	}
+	if idx := bytes.Index(line, []byte(`,patrolled and found `)); idx != -1 {
+		line[idx] = '\\'
+	}
+
 	// remove all trailing backslashes from the line
 	line = bytes.TrimRight(line, "\\")
 

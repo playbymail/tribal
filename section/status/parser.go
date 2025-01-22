@@ -5,15 +5,16 @@ package status
 import (
 	"bytes"
 	"github.com/playbymail/tribal/direction"
-	"github.com/playbymail/tribal/domains"
+	"github.com/playbymail/tribal/parser/ast"
 	"github.com/playbymail/tribal/passage"
 	"github.com/playbymail/tribal/resource"
 	"github.com/playbymail/tribal/terrain"
 	"regexp"
+	"strings"
 )
 
 var (
-	reStatusPrefix = regexp.MustCompile(`^\d{4}([cefg][1-9])? status:`)
+	reStatusPrefix = regexp.MustCompile(`^(\d{4}([cefg][1-9])?) status:`)
 )
 
 // Parse parses the status of a unit.
@@ -21,28 +22,30 @@ var (
 //
 // Per the spec, the line should look like this:
 //
-//	UnitId " status:" TerrainName (,(SpecialHex|VillageName))? (,Resources)? (,Neighbors)? (,Passages)? (,Units)?
-func Parse(path string, input []byte) (*domains.Status_t, error) {
-	var s domains.Status_t
+//	UnitId "status:" TerrainName (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Neighbor)* (COMMA Border)* (COMMA Passages)* (COMMA Units)*
+func Parse(curr ast.Coordinates_t, input []byte) (*ast.Status_t, error) {
+	var s ast.Status_t
 
 	// expect unit id followed by " status:"
-	if match := reStatusPrefix.Find(input); match == nil {
-		return nil, domains.ErrInvalidStatusPrefix
+	if match := reStatusPrefix.FindSubmatch(input); match == nil {
+		return nil, ast.ErrNotUnitStatusLine
 	} else {
-		s.Unit = domains.UnitId_t(string(match))
-		input = input[len(match):] // consume the match
+		s.Unit = ast.UnitId_t(match[1])
+		input = input[len(match[0]):] // consume the match
 	}
 
 	// expect terrain name followed by comma or end of input
 	if terrainType, rest, ok := expectTerrainName(input); !ok {
-		return nil, domains.ErrMissingTerrainType
+		return nil, ast.ErrMissingTerrainType
 	} else {
 		s.Tile.Terrain = terrainType
 		input = rest
 	}
+	// tile will inherit this unit's current location
+	s.Tile.Coordinates = curr
 
 	// remaining fields are optional
-	s.Tile.SettlementName, input = acceptOptionalSettlementName(input)
+	s.Tile.HexName, input = acceptOptionalSpecialHexName(input)
 	s.Tile.Resources, input = acceptOptionalResources(input)
 	s.Tile.Neighbors, input = acceptOptionalNeighbors(input)
 	s.Tile.Passages, input = acceptOptionalPassages(input)
@@ -61,16 +64,16 @@ var (
 	reUnitIdElement = regexp.MustCompile(`^[, ](\d{4}(?:[cefg][1-9])?)(?:[ ,]|$)`)
 )
 
-func acceptEncounter(input []byte) (domains.UnitId_t, []byte, bool) {
+func acceptEncounter(input []byte) (ast.UnitId_t, []byte, bool) {
 	match := reUnitIdElement.FindSubmatch(input)
 	if match == nil { // did not find unit id
 		return "", input, false
 	}
 	unit, rest := match[1], input[len(match[1])+1:] // capture unit id and advance to the delimiter
-	return domains.UnitId_t(unit), rest, true
+	return ast.UnitId_t(unit), rest, true
 }
 
-func acceptOptionalEncounters(input []byte) (list []domains.UnitId_t, rest []byte) {
+func acceptOptionalEncounters(input []byte) (list []ast.UnitId_t, rest []byte) {
 	unit, rest, ok := acceptEncounter(input)
 	for ok {
 		list = append(list, unit)
@@ -85,44 +88,38 @@ var (
 
 // accept neighboring terrains.
 // these are certain terrain types followed by a list of directions.
-func acceptNeighborTerrain(input []byte) ([]domains.Neighbor_t, []byte, bool) {
+func acceptNeighborTerrain(input []byte) (*ast.Neighbor_t, []byte, bool) {
 	match := reTerrainCode.FindSubmatch(input)
 	if match == nil { // did not find terrain code
 		return nil, input, false
 	}
 	code, rest := match[1], input[len(match[1])+1:] // capture the terrain code and advance to the delimiter
-	enum, ok := terrain.BorderCodes[string(code)]
+	enum, ok := terrain.NeighborCodes[string(code)]
 	if !ok { // did not find terrain code
 		return nil, input, false
 	}
-	var list []direction.Direction_e
-	list, rest, ok = acceptDirections(rest)
+	neighbors := ast.Neighbor_t{Terrain: enum}
+	neighbors.Direction, rest, ok = acceptDirections(rest)
 	if !ok { // did not find terrain code followed by list of directions
 		return nil, input, false
 	}
-	var neighbors []domains.Neighbor_t
-	for _, elem := range list {
-		neighbors = append(neighbors, domains.Neighbor_t{Terrain: enum, Direction: elem})
-	}
-	return neighbors, rest, true
+	return &neighbors, rest, true
 }
 
-func acceptOptionalNeighbors(input []byte) (list []domains.Neighbor_t, rest []byte) {
-	neighbors, rest, ok := acceptNeighborTerrain(input)
-	for ok {
-		for _, neighbor := range neighbors {
-			list = append(list, neighbor)
-		}
-		neighbors, rest, ok = acceptNeighborTerrain(rest)
+func acceptOptionalNeighbors(input []byte) ([]*ast.Neighbor_t, []byte) {
+	var list []*ast.Neighbor_t
+	for neighbors, rest, ok := acceptNeighborTerrain(input); ok; neighbors, rest, ok = acceptNeighborTerrain(input) {
+		list = append(list, neighbors)
+		input = rest
 	}
-	return list, rest
+	return list, input
 }
 
 var (
 	rePassage = regexp.MustCompile(`^,(canal|ford|pass|river|stone road) `)
 )
 
-func acceptPassage(input []byte) ([]domains.Passage_t, []byte, bool) {
+func acceptPassage(input []byte) (*ast.Passage_t, []byte, bool) {
 	match := rePassage.FindSubmatch(input)
 	if match == nil { // did not find passage
 		return nil, input, false
@@ -132,27 +129,21 @@ func acceptPassage(input []byte) ([]domains.Passage_t, []byte, bool) {
 	if !ok { // should never happen
 		return nil, input, false
 	}
-	var list []direction.Direction_e
-	list, rest, ok = acceptDirections(rest)
-	if !ok { // did not find passage followed by directions
+	passages := ast.Passage_t{Passage: enum}
+	passages.Direction, rest, ok = acceptDirections(rest)
+	if !ok { // did not find passage followed by direction list
 		return nil, input, false
 	}
-	var passages []domains.Passage_t
-	for _, elem := range list {
-		passages = append(passages, domains.Passage_t{Passage: enum, Direction: elem})
-	}
-	return passages, rest, true
+	return &passages, rest, true
 }
 
-func acceptOptionalPassages(input []byte) (list []domains.Passage_t, rest []byte) {
-	passages, rest, ok := acceptPassage(input)
-	for ok {
-		for _, elem := range passages {
-			list = append(list, elem)
-		}
-		passages, rest, ok = acceptPassage(rest)
+func acceptOptionalPassages(input []byte) ([]*ast.Passage_t, []byte) {
+	var list []*ast.Passage_t
+	for passages, rest, ok := acceptPassage(input); ok; passages, rest, ok = acceptPassage(input) {
+		list = append(list, passages)
+		input = rest
 	}
-	return list, rest
+	return list, input
 }
 
 // accept resource name followed by comma or end of input
@@ -186,34 +177,34 @@ func acceptOptionalResources(input []byte) (list []resource.Resource_e, rest []b
 	return list, rest
 }
 
-// settlement name. this test is horrible.
-// if the next item isn't something else, then it's a settlement name.
-func acceptSettlementName(input []byte) (string, []byte, bool) {
+// hex name. this test is horrible.
+// if the next item isn't something else, then it's a special hex or village name.
+func acceptHexName(input []byte) (*ast.HexName_t, []byte, bool) {
 	if len(input) == 0 || input[0] != ',' {
-		return "", input, false
+		return nil, input, false
 	} else if _, _, ok := acceptResource(input); ok {
-		return "", input, false
+		return nil, input, false
 	} else if _, _, ok = acceptNeighborTerrain(input); ok {
-		return "", input, false
+		return nil, input, false
 	} else if _, _, ok = acceptPassage(input); ok {
-		return "", input, false
+		return nil, input, false
 	} else if _, _, ok = acceptEncounter(input); ok {
-		return "", input, false
+		return nil, input, false
 	}
-	var name, rest []byte
-	rest = input[1:] // consume the comma
+	rest := input[1:] // consume the comma
+	var name []byte
 	if idx := bytes.Index(rest, []byte{','}); idx == -1 {
 		name, rest = rest, nil // no comma found, use entire input as settlement name
 	} else {
 		name, rest = rest[:idx], rest[idx:]
 	}
-	return string(name), rest, true
+	return &ast.HexName_t{Name: strings.Title(string(name))}, rest, true
 }
 
-func acceptOptionalSettlementName(input []byte) (name string, rest []byte) {
-	name, rest, ok := acceptSettlementName(input)
+func acceptOptionalSpecialHexName(input []byte) (*ast.HexName_t, []byte) {
+	name, rest, ok := acceptHexName(input)
 	if !ok {
-		return "", input
+		return name, input
 	}
 	return name, rest
 }
@@ -257,11 +248,11 @@ func acceptDirections(input []byte) ([]direction.Direction_e, []byte, bool) {
 // per the spec, the list is (space unit id)* and terminated by a comma (or end of input).
 // but because of typos, we'll accept commas or spaces for delimiters and termination by
 // anything other than a unit id.
-func acceptEncounters(input []byte) ([]domains.UnitId_t, []byte, bool) {
-	var list []domains.UnitId_t
+func acceptEncounters(input []byte) ([]ast.UnitId_t, []byte, bool) {
+	var list []ast.UnitId_t
 	for match := reUnitIdElement.FindSubmatch(input); match != nil; match = reUnitIdElement.FindSubmatch(input) {
 		unit, rest := match[1], input[len(match[1])+1:] // capture unit id and advance to the delimiter
-		list, input = append(list, domains.UnitId_t(unit)), rest
+		list, input = append(list, ast.UnitId_t(unit)), rest
 	}
 	return list, input, len(list) > 0
 }

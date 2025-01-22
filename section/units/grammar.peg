@@ -19,42 +19,41 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/playbymail/tribal/adapters"
-	"github.com/playbymail/tribal/domains"
+	"github.com/playbymail/tribal/parser/ast"
 )
 }
 
 UnitHeading <- uid:UnitDeclaration "," un:UnitName ",current hex = " ch:Coordinates ",(previous hex = " ph:Coordinates ")" .* EOF {
-    return &domains.Unit_t{
-        Id: uid.(domains.UnitId_t),
-        Name: un.(domains.UnitName_t),
-        CurrentHex: ch.(domains.Coordinates_t),
-        PreviousHex: ph.(domains.Coordinates_t),
+    return &ast.Unit_t{
+        Id: uid.(ast.UnitId_t),
+        Name: un.(ast.UnitName_t),
+        CurrentHex: ch.(ast.Coordinates_t),
+        PreviousHex: ph.(ast.Coordinates_t),
     }, nil
 }
 
 UnitDeclaration <- "courier " DIGIT DIGIT DIGIT DIGIT "c" [1-9] {
-    return domains.UnitId_t(string(c.text[8:8+6])), nil
+    return ast.UnitId_t(string(c.text[8:8+6])), nil
 } / "element " DIGIT DIGIT DIGIT DIGIT "e" [1-9] {
-    return domains.UnitId_t(string(c.text[8:8+6])), nil
+    return ast.UnitId_t(string(c.text[8:8+6])), nil
 } / "fleet " DIGIT DIGIT DIGIT DIGIT "f" [1-9] {
-    return domains.UnitId_t(string(c.text[6:6+6])), nil
+    return ast.UnitId_t(string(c.text[6:6+6])), nil
 } / "garrison " DIGIT DIGIT DIGIT DIGIT "g" [1-9] {
-    return domains.UnitId_t(string(c.text[9:9+6])), nil
+    return ast.UnitId_t(string(c.text[9:9+6])), nil
 } / "tribe " DIGIT DIGIT DIGIT DIGIT {
-    return domains.UnitId_t(string(c.text[6:6+4])), nil
+    return ast.UnitId_t(string(c.text[6:6+4])), nil
 }
 
 UnitName <- (![,] .)*  {
-    return domains.UnitName_t(string(c.text)), nil
+    return ast.UnitName_t(string(c.text)), nil
 }
 
 Coordinates <- LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 } / "## " DIGIT DIGIT DIGIT DIGIT {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 } / "n/a" {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 }
 
 EOF    = !.

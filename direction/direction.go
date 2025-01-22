@@ -11,7 +11,7 @@ import (
 type Direction_e int
 
 const (
-	Unknown Direction_e = iota
+	None Direction_e = iota
 	North
 	NorthEast
 	SouthEast
@@ -77,7 +77,7 @@ func (d Direction_e) String() string {
 var (
 	// EnumToString is a helper map for marshalling the enum
 	EnumToString = map[Direction_e]string{
-		Unknown:   "?",
+		None:      "",
 		North:     "N",
 		NorthEast: "NE",
 		SouthEast: "SE",
@@ -87,7 +87,7 @@ var (
 	}
 	// StringToEnum is a helper map for unmarshalling the enum
 	StringToEnum = map[string]Direction_e{
-		"?":  Unknown,
+		"":   None,
 		"N":  North,
 		"NE": NorthEast,
 		"SE": SouthEast,
@@ -105,3 +105,39 @@ var (
 		"nw": NorthWest,
 	}
 )
+
+// column direction vectors defines the vectors used to determine the coordinates
+// of the neighboring column based on the direction and the odd/even column
+// property of the starting hex.
+//
+// NB: grids and hexes start at 1, 1 so "odd" and "even" are based on the hex coordinates.
+
+var OddColumnVectors = map[Direction_e][2]int{
+	North:     [2]int{+0, -1}, // ## 1306 -> ## 1305
+	NorthEast: [2]int{+1, -1}, // ## 1306 -> ## 1405
+	SouthEast: [2]int{+1, +0}, // ## 1306 -> ## 1406
+	South:     [2]int{+0, +1}, // ## 1306 -> ## 1307
+	SouthWest: [2]int{-1, +0}, // ## 1306 -> ## 1206
+	NorthWest: [2]int{-1, -1}, // ## 1306 -> ## 1205
+}
+
+var EvenColumnVectors = map[Direction_e][2]int{
+	North:     [2]int{+0, -1}, // ## 1206 -> ## 1205
+	NorthEast: [2]int{+1, +0}, // ## 1206 -> ## 1306
+	SouthEast: [2]int{+1, +1}, // ## 1206 -> ## 1307
+	South:     [2]int{+0, +1}, // ## 1206 -> ## 1207
+	SouthWest: [2]int{-1, +1}, // ## 1206 -> ## 1107
+	NorthWest: [2]int{-1, +0}, // ## 1206 -> ## 1106
+}
+
+// Add moves in the given direction and returns the new row and column.
+// It always moves a single hex and allows for moving between grids and wrapping around the big map.
+func Add(row, col int, d Direction_e) (int, int) {
+	if d == None {
+		return row, col
+	} else if col%2 == 0 { // even column
+		return row + EvenColumnVectors[d][1], col + EvenColumnVectors[d][0]
+	}
+	// odd column
+	return row + OddColumnVectors[d][1], col + OddColumnVectors[d][0]
+}

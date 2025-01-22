@@ -213,6 +213,41 @@ var (
 		UnknownWater:         "Water Reefs",
 	}
 
+	TerrainCodes = map[string]Terrain_e{
+		"alps": Alps,
+		"ah":   AridHills,
+		"ar":   AridTundra,
+		"bf":   BrushFlat,
+		"bh":   BrushHills,
+		"ch":   ConiferHills,
+		"d":    Deciduous,
+		"dh":   DeciduousHills,
+		"de":   Desert,
+		"gh":   GrassyHills,
+		"ghp":  GrassyHillsPlateau,
+		"hsm":  HighSnowyMountains,
+		"jg":   Jungle,
+		"jh":   JungleHills,
+		"l":    Lake,
+		"lam":  LowAridMountains,
+		"lcm":  LowConiferMountains,
+		"ljm":  LowJungleMountains,
+		"lsm":  LowSnowyMountains,
+		"lvm":  LowVolcanicMountains,
+		"o":    Ocean,
+		"pi":   PolarIce,
+		"ppr":  PrairiePlateau,
+		"pr":   Prairie,
+		"rh":   RockyHills,
+		"sh":   SnowyHills,
+		"sw":   Swamp,
+		"tu":   Tundra,
+		"ujs":  UnknownJungleSwamp,
+		"ul":   UnknownLand,
+		"um":   UnknownMountain,
+		"uw":   UnknownWater,
+	}
+
 	LongTerrainNames = map[string]Terrain_e{
 		"alps":                   Alps,
 		"arid tundra":            AridTundra,
@@ -248,10 +283,9 @@ var (
 		"tundra":                 Tundra,
 	}
 
-	// BorderCodes is the map for matching terrain names in bordering tiles.
-	// Not all terrain types are listed here, only those that are actually
-	// observable in the game.
-	BorderCodes = map[string]Terrain_e{
+	// NeighborCodes is the map for matching terrain names in neighboring tiles.
+	// Not all terrain types are listed here, only those that are actually observable in the game.
+	NeighborCodes = map[string]Terrain_e{
 		"alps": Alps,
 		"ah":   AridHills,
 		"ar":   AridTundra,

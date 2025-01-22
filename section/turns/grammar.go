@@ -17,76 +17,76 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/playbymail/tribal/domains"
+	"github.com/playbymail/tribal/parser/ast"
 )
 
 var g = &grammar{
 	rules: []*rule{
 		{
 			name: "TurnLine",
-			pos:  position{line: 23, col: 1, offset: 268},
+			pos:  position{line: 23, col: 1, offset: 271},
 			expr: &actionExpr{
-				pos: position{line: 23, col: 13, offset: 280},
+				pos: position{line: 23, col: 13, offset: 283},
 				run: (*parser).callonTurnLine1,
 				expr: &seqExpr{
-					pos: position{line: 23, col: 13, offset: 280},
+					pos: position{line: 23, col: 13, offset: 283},
 					exprs: []any{
 						&litMatcher{
-							pos:        position{line: 23, col: 13, offset: 280},
+							pos:        position{line: 23, col: 13, offset: 283},
 							val:        "current turn ",
 							ignoreCase: false,
 							want:       "\"current turn \"",
 						},
 						&labeledExpr{
-							pos:   position{line: 23, col: 29, offset: 296},
+							pos:   position{line: 23, col: 29, offset: 299},
 							label: "yyyy",
 							expr: &ruleRefExpr{
-								pos:  position{line: 23, col: 34, offset: 301},
+								pos:  position{line: 23, col: 34, offset: 304},
 								name: "Year",
 							},
 						},
 						&litMatcher{
-							pos:        position{line: 23, col: 39, offset: 306},
+							pos:        position{line: 23, col: 39, offset: 309},
 							val:        "-",
 							ignoreCase: false,
 							want:       "\"-\"",
 						},
 						&labeledExpr{
-							pos:   position{line: 23, col: 43, offset: 310},
+							pos:   position{line: 23, col: 43, offset: 313},
 							label: "mm",
 							expr: &ruleRefExpr{
-								pos:  position{line: 23, col: 46, offset: 313},
+								pos:  position{line: 23, col: 46, offset: 316},
 								name: "Month",
 							},
 						},
 						&litMatcher{
-							pos:        position{line: 23, col: 52, offset: 319},
+							pos:        position{line: 23, col: 52, offset: 322},
 							val:        "(#",
 							ignoreCase: false,
 							want:       "\"(#\"",
 						},
 						&labeledExpr{
-							pos:   position{line: 23, col: 57, offset: 324},
+							pos:   position{line: 23, col: 57, offset: 327},
 							label: "n",
 							expr: &ruleRefExpr{
-								pos:  position{line: 23, col: 59, offset: 326},
+								pos:  position{line: 23, col: 59, offset: 329},
 								name: "TurnNo",
 							},
 						},
 						&litMatcher{
-							pos:        position{line: 23, col: 66, offset: 333},
+							pos:        position{line: 23, col: 66, offset: 336},
 							val:        ")",
 							ignoreCase: false,
 							want:       "\")\"",
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 23, col: 70, offset: 337},
+							pos: position{line: 23, col: 70, offset: 340},
 							expr: &anyMatcher{
-								line: 23, col: 70, offset: 337,
+								line: 23, col: 70, offset: 340,
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 23, col: 73, offset: 340},
+							pos:  position{line: 23, col: 73, offset: 343},
 							name: "EOF",
 						},
 					},
@@ -95,14 +95,14 @@ var g = &grammar{
 		},
 		{
 			name: "Year",
-			pos:  position{line: 39, col: 1, offset: 875},
+			pos:  position{line: 39, col: 1, offset: 854},
 			expr: &actionExpr{
-				pos: position{line: 39, col: 9, offset: 883},
+				pos: position{line: 39, col: 9, offset: 862},
 				run: (*parser).callonYear1,
 				expr: &oneOrMoreExpr{
-					pos: position{line: 39, col: 9, offset: 883},
+					pos: position{line: 39, col: 9, offset: 862},
 					expr: &ruleRefExpr{
-						pos:  position{line: 39, col: 9, offset: 883},
+						pos:  position{line: 39, col: 9, offset: 862},
 						name: "DIGIT",
 					},
 				},
@@ -110,14 +110,14 @@ var g = &grammar{
 		},
 		{
 			name: "Month",
-			pos:  position{line: 43, col: 1, offset: 935},
+			pos:  position{line: 43, col: 1, offset: 914},
 			expr: &actionExpr{
-				pos: position{line: 43, col: 10, offset: 944},
+				pos: position{line: 43, col: 10, offset: 923},
 				run: (*parser).callonMonth1,
 				expr: &oneOrMoreExpr{
-					pos: position{line: 43, col: 10, offset: 944},
+					pos: position{line: 43, col: 10, offset: 923},
 					expr: &ruleRefExpr{
-						pos:  position{line: 43, col: 10, offset: 944},
+						pos:  position{line: 43, col: 10, offset: 923},
 						name: "DIGIT",
 					},
 				},
@@ -125,14 +125,14 @@ var g = &grammar{
 		},
 		{
 			name: "TurnNo",
-			pos:  position{line: 47, col: 1, offset: 996},
+			pos:  position{line: 47, col: 1, offset: 975},
 			expr: &actionExpr{
-				pos: position{line: 47, col: 11, offset: 1006},
+				pos: position{line: 47, col: 11, offset: 985},
 				run: (*parser).callonTurnNo1,
 				expr: &oneOrMoreExpr{
-					pos: position{line: 47, col: 11, offset: 1006},
+					pos: position{line: 47, col: 11, offset: 985},
 					expr: &ruleRefExpr{
-						pos:  position{line: 47, col: 11, offset: 1006},
+						pos:  position{line: 47, col: 11, offset: 985},
 						name: "DIGIT",
 					},
 				},
@@ -140,19 +140,19 @@ var g = &grammar{
 		},
 		{
 			name: "EOF",
-			pos:  position{line: 51, col: 1, offset: 1058},
+			pos:  position{line: 51, col: 1, offset: 1037},
 			expr: &notExpr{
-				pos: position{line: 51, col: 10, offset: 1067},
+				pos: position{line: 51, col: 10, offset: 1046},
 				expr: &anyMatcher{
-					line: 51, col: 11, offset: 1068,
+					line: 51, col: 11, offset: 1047,
 				},
 			},
 		},
 		{
 			name: "DIGIT",
-			pos:  position{line: 52, col: 1, offset: 1070},
+			pos:  position{line: 52, col: 1, offset: 1049},
 			expr: &charClassMatcher{
-				pos:        position{line: 52, col: 10, offset: 1079},
+				pos:        position{line: 52, col: 10, offset: 1058},
 				val:        "[0-9]",
 				ranges:     []rune{'0', '9'},
 				ignoreCase: false,
@@ -161,11 +161,11 @@ var g = &grammar{
 		},
 		{
 			name: "SP",
-			pos:  position{line: 53, col: 1, offset: 1085},
+			pos:  position{line: 53, col: 1, offset: 1064},
 			expr: &oneOrMoreExpr{
-				pos: position{line: 53, col: 10, offset: 1094},
+				pos: position{line: 53, col: 10, offset: 1073},
 				expr: &charClassMatcher{
-					pos:        position{line: 53, col: 10, offset: 1094},
+					pos:        position{line: 53, col: 10, offset: 1073},
 					val:        "[ \\t]",
 					chars:      []rune{' ', '\t'},
 					ignoreCase: false,
@@ -179,17 +179,17 @@ var g = &grammar{
 func (c *current) onTurnLine1(yyyy, mm, n any) (any, error) {
 	year, month, no := yyyy.(int), mm.(int), n.(int)
 	if !(0 <= no && no <= 9999) {
-		return 0, domains.ErrInvalidTurnNo
+		return 0, ast.ErrInvalidTurnNo
 	} else if !(899 <= year && year <= 9999) {
-		return 0, domains.ErrInvalidYear
+		return 0, ast.ErrInvalidYear
 	} else if !(1 <= month && month <= 12) {
-		return 0, domains.ErrInvalidMonth
+		return 0, ast.ErrInvalidMonth
 	} else if year == 899 && month != 12 {
-		return 0, domains.ErrInvalidMonth
+		return 0, ast.ErrInvalidMonth
 	} else if no != (year-899)*12+month-12 {
-		return 0, domains.ErrTurnNoMismatch
+		return 0, ast.ErrTurnNoMismatch
 	}
-	return domains.TurnId_t(no), nil
+	return ast.TurnId_t(no), nil
 }
 
 func (p *parser) callonTurnLine1() (any, error) {

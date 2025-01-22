@@ -19,7 +19,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/playbymail/tribal/adapters"
 	"github.com/playbymail/tribal/parser/ast"
 )
 
@@ -118,13 +117,13 @@ PreviousHex <- "previous hex = " coords:Coordinates {
 // Otherwise it will consume up to the next comma.
 
 Coordinates <- LETTER LETTER SP DIGIT DIGIT DIGIT DIGIT {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 } / "##" SP DIGIT DIGIT DIGIT DIGIT {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 } / "n/a" {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 } / (![,)] .)* {
-    return adapters.TextToCoordinates(c.text)
+    return ast.TextToCoordinates(c.text)
 }
 
 EOF    = !.

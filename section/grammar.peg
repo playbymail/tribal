@@ -1,23 +1,60 @@
+// turn report grammar v31 (2025.01.16)
+
 Report <- Unit*
 
 Unit <- Header Turn MoveResults? ScoutResults? Status?
 
-MoveResults <- UnitFollows | UnitGoesTo | UnitMoves | FleetMoves
+Header <- UnitDeclaration COMMA UnitName? COMMA CurrentHex COMMA LPAREN PreviousHex RPAREN
 
-UnitFollows <- "tribe follows" UnitId
+UnitDeclaration <- ("tribe" | "courier" | "element" | "garrison" | "fleet") UnitId
 
-UnitGoesTo  <- "tribe goes to" Coordinates
+CurrentHex  <- "current hex =" Coordinates
 
-UnitMoves <- "tribe movement:move" (BACKSLASH Success)* (BACKSLASH Fail)?
+PreviousHex <- "previous hex =" Coordinates
 
-Success    <- TerrainCode DASH Direction (COMMA Neighbor)* (COMMA Passage)* (COMMA (SpecialHex | VillageName))?
+Turn <- "current turn" YEAR DASH MONTH "(#" TurnNo ")" OptionalSeasonWeatherNextTurnAndReportDate?
 
-Fail       <- FailMP | FailNoFord | FailShore | FailWagons
-FailMP     <- "not enough m.p's to move to" Direction "into" TerrainName
-FailNoFord <- "no ford on"    (Canal|River) "to" Direction "of hex"
-FailShore  <- "can't move on" (Lake|Ocean)  "to" Direction "of hex"
-FailWagons <- "cannot move wagons into swamp/jungle hill to" Direction "of hex"
+MoveResults  <- UnitFollows | UnitGoesTo | UnitMoves | FleetMoves
 
-FleetMoves  <- TODO
+UnitFollows  <- "tribe follows" UnitId
 
-Status <- UnitId "status:" TerrainName (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Neighbors)* (COMMA Passages)* (COMMA Units)*
+UnitGoesTo   <- "tribe goes to" Coordinates
+
+UnitMoves    <- "tribe movement:move" (BACKSLASH MarchSuccess)* (BACKSLASH MarchFail)?
+
+FleetMoves   <- WindStrength Direction "fleet movement:move" (BACKSLASH SailSuccess)* (BACKSLASH SailFail)?
+
+ScoutResults <- "scout" [1-8] ":scout" ("still" | Direction DASH TerrainCode) (COMMA Neighbor)* (COMMA Border)* (COMMA Passage)* (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Units)* (BACKSLASH (FoundUnits | FoundNothing))?
+
+Status       <- UnitId "status:" TerrainName (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Neighbor)* (COMMA Border)* (COMMA Passages)* (COMMA Units)*
+
+MarchSuccess     <- Direction DASH TerrainCode (COMMA Neighbor)* (COMMA Border)* (COMMA Passage)* (COMMA (SpecialHex | VillageName))?
+
+MarchFail        <- MarchFailMP | MarchFailNoFord | MarchFailShore | MarchFailWagons
+MarchFailMP      <- "not enough m.p's to move to" Direction "into" TerrainName
+MarchFailNoFord  <- "no ford on"    (Canal|River) "to" Direction "of hex"
+MarchFailShore   <- "can't move on" (Lake |Ocean) "to" Direction "of hex"
+MarchFailWagons  <- "cannot move wagons into swamp/jungle hill to" Direction "of hex"
+
+SailSuccess      <- Direction DASH TerrainCode (COMMA Neighbor)* (COMMA Passage)* (COMMA VillageName)? SailReport
+SailReport       <- NeighborReport HorizonReport
+NeighborReport   <- DASH LPAREN NeighborSighting (COMMA NeighborSighting)* RPAREN
+NeighborSighting <- Direction TerrainCode
+HorizonReport    <- LPAREN HorizonSighting (COMMA HorizonSighting)* RPAREN
+HorizonSighting  <- "sight" ("land" | "water") DASH HorizonDirection
+HorizonDirection <- "nw/nw" | "n/nw" | "n/n" | "n/ne" | "ne/ne" | "ne/se" | "se/se" | "s/se" | "s/s" | "s/sw" | "sw/sw" |"sw/nw"
+
+SailFail         <- "no river adjacent to hex to" Direction "of hex"
+
+Neighbor         <- TerrainCode Direction+
+
+Border           <- BorderName Direction+
+BorderName       <- "canal" | "river"
+
+Passage          <- PassageName Direction+
+PassageName      <- "ford" | "pass" | "stone road"
+
+FoundUnits       <- "patrolled and found " UnitId (COMMA UnitId)*
+FoundNothing     <- "nothing of interest found"
+
+WindStrength     <- "calm" | "mild" | "strong" | "gale"

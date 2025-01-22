@@ -4,11 +4,21 @@ package ast
 
 const (
 	ErrInvalidCoordinates    Error = "invalid coordinates"
+	ErrInvalidMonth          Error = "invalid month"
+	ErrInvalidTurnNo         Error = "invalid turn number"
+	ErrInvalidUnitFollows    Error = "invalid unit follows"
+	ErrInvalidUnitGoesTo     Error = "invalid unit goes to"
+	ErrInvalidYear           Error = "invalid year"
+	ErrMissingTerrainType    Error = "missing terrain type"
 	ErrMultipleCurrentHexes  Error = "multiple current hexes"
 	ErrMultiplePreviousHexes Error = "multiple previous hexes"
 	ErrNoMatch               Error = "no match"
+	ErrNotScoutPatrolLine    Error = "not a scout patrol line"
+	ErrNotTribeMovementLine  Error = "not a tribe movement line"
+	ErrNotUnitStatusLine     Error = "not a unit status line"
 	ErrTooFewFields          Error = "too few fields"
 	ErrTooManyFields         Error = "too many fields"
+	ErrTurnNoMismatch        Error = "turn number mismatch"
 	ErrUnexpectedInput       Error = "unexpected input"
 )
 

@@ -18,6 +18,15 @@ import (
 
 func main() {
 	log.SetFlags(log.Lshortfile)
+	const logFileName = "ottomap.txt"
+	log.Printf("ottomap: writing log file to %s\n", logFileName)
+
+	if fd, err := os.OpenFile(logFileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644); err != nil {
+		log.Fatal(err)
+	} else {
+		log.SetOutput(fd)
+	}
+
 	started := time.Now()
 	for _, clan := range []int{138} {
 		for _, turnId := range []tribal.TurnId_t{0, 1, 2, 3, 4, 5} {
@@ -26,6 +35,8 @@ func main() {
 			}
 		}
 	}
+
+	log.SetOutput(os.Stderr)
 	log.Printf("ottomap: completed in %v", time.Since(started))
 }
 
@@ -100,7 +111,7 @@ func importReport(clan int, turnId tribal.TurnId_t, input []byte) error {
 			log.Printf("section: %d: %s: %v", s.Id, s.Lines.Unit, err)
 		}
 	}
-	log.Printf("parsed                     %8d sections in %v", len(sections), time.Since(now))
+	log.Printf("parsed                     %8d sections in %v\n\n\n", len(sections), time.Since(now))
 
 	return nil
 }
