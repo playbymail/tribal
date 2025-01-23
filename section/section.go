@@ -35,6 +35,10 @@ type Section struct {
 	Errors []error // error from parsing the unit header
 }
 
+var (
+	Units []*ast.Unit_t
+)
+
 // Less returns true if section should be sorted before another section.
 // We sort by clan, then unit, then line number.
 func (s *Section) Less(s2 *Section) bool {
@@ -94,13 +98,13 @@ func (s *Section) Parse(path string) error {
 	// parse movement line. note that we will never parse more than one movement line.
 	// the order we check them in is arbitrary.
 	if s.Lines.UnitFollows != nil {
-		if u, err := common.ParseTribeFollows(path, s.Lines.UnitFollows); err != nil {
+		if u, err := common.ParseTribeFollows(s.Unit.Id, s.Unit.PreviousHex, s.Unit.CurrentHex, s.Lines.UnitFollows); err != nil {
 			s.Unit.Moves = &ast.Moves_t{Errors: []error{err}}
 		} else {
 			s.Unit.Moves = &ast.Moves_t{Follows: u}
 		}
 	} else if s.Lines.UnitGoesTo != nil {
-		if c, err := common.ParseTribeGoesTo(path, s.Lines.UnitGoesTo); err != nil {
+		if c, err := common.ParseTribeGoesTo(s.Unit.Id, s.Unit.PreviousHex, s.Unit.CurrentHex, s.Lines.UnitGoesTo); err != nil {
 			s.Unit.Moves = &ast.Moves_t{Errors: []error{err}}
 		} else {
 			s.Unit.Moves = &ast.Moves_t{GoesTo: c}
@@ -172,6 +176,9 @@ func (s *Section) Parse(path string) error {
 	}
 	log.Printf("section: status  %q\n", s.Lines.Status)
 	log.Printf("unit: %s", s.Dump())
+
+	Units = append(Units, s.Unit)
+
 	return nil
 }
 

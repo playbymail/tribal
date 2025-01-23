@@ -15,12 +15,17 @@ var (
 // ParseTribeGoesTo parses the tribe goes to line.
 //
 //	"tribe goes to" Coordinates
-func ParseTribeGoesTo(path string, input []byte) (*ast.Coordinates_t, error) {
+func ParseTribeGoesTo(id ast.UnitId_t, from, to ast.Coordinates_t, input []byte) (*ast.GoesTo_t, error) {
 	if match := reUnitGoesTo.FindSubmatch(input); match == nil {
 		return nil, ast.ErrInvalidUnitGoesTo
 	} else if coords, err := ast.TextToCoordinates(match[1]); err != nil {
 		return nil, err
 	} else {
-		return &coords, err
+		return &ast.GoesTo_t{
+			Id:     id,
+			From:   from,
+			GoesTo: coords,
+			To:     to,
+		}, nil
 	}
 }

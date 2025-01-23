@@ -23,7 +23,6 @@ const (
 	DeciduousHills
 	Desert
 	GrassyHills
-	GrassyHillsPlateau
 	HighSnowyMountains
 	Jungle
 	JungleHills
@@ -34,6 +33,7 @@ const (
 	LowSnowyMountains
 	LowVolcanicMountains
 	Ocean
+	PlateauGrassyHills
 	PolarIce
 	Prairie
 	PrairiePlateau
@@ -114,7 +114,6 @@ var (
 		Desert:               "DE",
 		DeciduousHills:       "DH",
 		GrassyHills:          "GH",
-		GrassyHillsPlateau:   "GHP",
 		HighSnowyMountains:   "HSM",
 		Jungle:               "JG",
 		JungleHills:          "JH",
@@ -125,6 +124,7 @@ var (
 		LowSnowyMountains:    "LSM",
 		LowVolcanicMountains: "LVM",
 		Ocean:                "O",
+		PlateauGrassyHills:   "PGH",
 		PolarIce:             "PI",
 		Prairie:              "PR",
 		PrairiePlateau:       "PPR",
@@ -150,7 +150,6 @@ var (
 		"DH":   DeciduousHills,
 		"DE":   Desert,
 		"GH":   GrassyHills,
-		"GHP":  GrassyHillsPlateau,
 		"HSM":  HighSnowyMountains,
 		"JG":   Jungle,
 		"JH":   JungleHills,
@@ -161,6 +160,7 @@ var (
 		"LSM":  LowSnowyMountains,
 		"LVM":  LowVolcanicMountains,
 		"O":    Ocean,
+		"PGH":  PlateauGrassyHills,
 		"PI":   PolarIce,
 		"PPR":  PrairiePlateau,
 		"PR":   Prairie,
@@ -189,7 +189,6 @@ var (
 		DeciduousHills:       "Hills Forest Deciduous",
 		Desert:               "Flat Desert Sandy",
 		GrassyHills:          "Hills Grassland",
-		GrassyHillsPlateau:   "Hills Grassy",
 		HighSnowyMountains:   "Mountain Snowcapped",
 		Jungle:               "Flat Forest Jungle Heavy",
 		JungleHills:          "Hills Forest Jungle",
@@ -200,6 +199,7 @@ var (
 		LowSnowyMountains:    "Mountains Snowcapped",
 		LowVolcanicMountains: "Mountain Volcano Dormant",
 		Ocean:                "Water Sea",
+		PlateauGrassyHills:   "Grassy Hills Plateau",
 		PolarIce:             "Mountains Glacier",
 		Prairie:              "Flat Grazing Land",
 		PrairiePlateau:       "Flat Grassland",
@@ -224,7 +224,6 @@ var (
 		"dh":   DeciduousHills,
 		"de":   Desert,
 		"gh":   GrassyHills,
-		"ghp":  GrassyHillsPlateau,
 		"hsm":  HighSnowyMountains,
 		"jg":   Jungle,
 		"jh":   JungleHills,
@@ -235,6 +234,7 @@ var (
 		"lsm":  LowSnowyMountains,
 		"lvm":  LowVolcanicMountains,
 		"o":    Ocean,
+		"pgh":  PlateauGrassyHills,
 		"pi":   PolarIce,
 		"ppr":  PrairiePlateau,
 		"pr":   Prairie,
@@ -250,8 +250,9 @@ var (
 
 	LongTerrainNames = map[string]Terrain_e{
 		"alps":                   Alps,
+		"arid":                   AridTundra, // todo: one of these is an alias?
+		"arid hills":             AridHills,
 		"arid tundra":            AridTundra,
-		"arid":                   AridHills,
 		"brush flat":             BrushFlat,
 		"brush hills":            BrushHills,
 		"brush":                  BrushFlat,
@@ -260,7 +261,6 @@ var (
 		"deciduous hills":        DeciduousHills,
 		"deciduous":              Deciduous,
 		"desert":                 Desert,
-		"grassy hills plateau":   GrassyHillsPlateau,
 		"grassy hills":           GrassyHills,
 		"high snowy mountains":   HighSnowyMountains,
 		"jungle hills":           JungleHills,
@@ -273,7 +273,7 @@ var (
 		"low volcanic mountains": LowVolcanicMountains,
 		"low volcano mountains":  LowVolcanicMountains,
 		"ocean":                  Ocean,
-		"plateau grassy hills":   GrassyHillsPlateau,
+		"plateau grassy hills":   PlateauGrassyHills,
 		"plateau prairie":        PrairiePlateau,
 		"polar ice":              PolarIce,
 		"prairie":                Prairie,
@@ -296,7 +296,6 @@ var (
 		"dh":   DeciduousHills,
 		"de":   Desert,
 		"gh":   GrassyHills,
-		"ghp":  GrassyHillsPlateau,
 		"hsm":  HighSnowyMountains,
 		"jg":   Jungle,
 		"jh":   JungleHills,
@@ -307,6 +306,7 @@ var (
 		"lsm":  LowSnowyMountains,
 		"lvm":  LowVolcanicMountains,
 		"o":    Ocean,
+		"pgh":  PlateauGrassyHills,
 		"pi":   PolarIce,
 		"ppr":  PrairiePlateau,
 		"pr":   Prairie,

@@ -8,8 +8,8 @@ import (
 	"github.com/playbymail/tribal/direction"
 	"github.com/playbymail/tribal/parser/ast"
 	"github.com/playbymail/tribal/terrain"
-	"log"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -72,24 +72,27 @@ func ParseScoutMovement(id ast.UnitId_t, start ast.Coordinates_t, input []byte) 
 	if len(segments) != 0 {
 		// accept the excess input.
 		// this will have to be presented to the user later.
-		list = append(list, &ast.Patrol_t{
+		ps := &ast.Patrol_t{
 			Id:     id,
 			Patrol: patrolId,
 			From:   from,
 			To:     from,
-			Errors: &ast.PatrolErrors_t{
-				ExcessInput: string(bytes.Join(segments, []byte{'\\'})),
-			},
-		})
+			Errors: &ast.PatrolErrors_t{},
+		}
+		for _, seg := range segments {
+			ps.Errors.ExcessInput = append(ps.Errors.ExcessInput, string(seg))
+		}
+		list = append(list, ps)
 	}
 
 	return list, nil
 }
 
 var (
-	reCantMove     = regexp.MustCompile(`^can't move on ([a-z]+(?: [a-z]+){0,2}) to ([ns][ew]?) of hex$`)
-	reNoFord       = regexp.MustCompile(`^no ford on (canal|river) to ([ns][ew]?) of hex$`)
-	reNotEnoughMPs = regexp.MustCompile(`^not enough m\.p's to move to ([ns][ew]?) into ([a-z]+(?: [a-z]+){0,2})$`)
+	reCantMove       = regexp.MustCompile(`^can't move on ([a-z]+(?: [a-z]+){0,2}) to ([ns][ew]?) of hex$`)
+	reCantMoveWagons = regexp.MustCompile(`^cannot move wagons into swamp/jungle hill to ([ns][ew]?) of hex$`)
+	reNoFord         = regexp.MustCompile(`^no ford on (canal|river) to ([ns][ew]?) of hex$`)
+	reNotEnoughMPs   = regexp.MustCompile(`^not enough m\.p's to move to ([ns][ew]?) into ([a-z]+(?: [a-z]+){0,2})$`)
 )
 
 func acceptPatrolFailure(id ast.UnitId_t, patrolId int, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, segments [][]byte) (*ast.Patrol_t, [][]byte) {
@@ -150,7 +153,27 @@ func acceptPatrolFailure(id ast.UnitId_t, patrolId int, from ast.Coordinates_t, 
 }
 
 func acceptPatrolFound(unit ast.UnitId_t, id int, from ast.Coordinates_t, ter terrain.Terrain_e, input []byte) (*ast.Patrol_t, bool) {
-	if bytes.HasPrefix(input, []byte(`nothing of interest found`)) {
+	if bytes.HasPrefix(input, []byte(`no groups located`)) {
+		input = input[17:] // consume prefix
+		ps := &ast.Patrol_t{
+			Id:        unit,
+			Patrol:    id,
+			From:      from,
+			Direction: direction.None,
+			To:        from,
+			Terrain:   ter,
+		}
+		// if we have something left over, we had invalid input.
+		// this will eventually be reported to the user.
+		if len(input) != 0 {
+			//log.Printf("accept: %q: scout %d: patrol excess %q\n", unit, id, string(input))
+			if ps.Errors == nil {
+				ps.Errors = &ast.PatrolErrors_t{}
+			}
+			ps.Errors.ExcessInput = append(ps.Errors.ExcessInput, string(input))
+		}
+		return ps, true
+	} else if bytes.HasPrefix(input, []byte(`nothing of interest found`)) {
 		input = input[25:] // consume prefix
 		ps := &ast.Patrol_t{
 			Id:        unit,
@@ -163,12 +186,11 @@ func acceptPatrolFound(unit ast.UnitId_t, id int, from ast.Coordinates_t, ter te
 		// if we have something left over, we had invalid input.
 		// this will eventually be reported to the user.
 		if len(input) != 0 {
-			log.Printf("accept: %q: scout %d: patrol excess %q\n", unit, id, string(input))
-			ps.Encounters = append(ps.Encounters, "FOBB")
+			//log.Printf("accept: %q: scout %d: patrol excess %q\n", unit, id, string(input))
 			if ps.Errors == nil {
 				ps.Errors = &ast.PatrolErrors_t{}
 			}
-			ps.Errors.ExcessInput = string(input)
+			ps.Errors.ExcessInput = append(ps.Errors.ExcessInput, string(input))
 		}
 		return ps, true
 	} else if bytes.HasPrefix(input, []byte(`patrolled and found `)) {
@@ -185,11 +207,11 @@ func acceptPatrolFound(unit ast.UnitId_t, id int, from ast.Coordinates_t, ter te
 		// if we have something left over, we had invalid input.
 		// this will eventually be reported to the user.
 		if len(input) != 0 {
-			log.Printf("accept: %q: scout %d: patrol excess %q\n", unit, id, string(input))
+			//log.Printf("accept: %q: scout %d: patrol excess %q\n", unit, id, string(input))
 			if ps.Errors == nil {
 				ps.Errors = &ast.PatrolErrors_t{}
 			}
-			ps.Errors.ExcessInput = string(input)
+			ps.Errors.ExcessInput = append(ps.Errors.ExcessInput, string(input))
 		}
 		return ps, true
 	}
@@ -214,22 +236,54 @@ func acceptPatrolSuccess(unit ast.UnitId_t, id int, from ast.Coordinates_t, inpu
 	input = rest
 
 	// remaining fields are optional
-	ps.Neighbors, input = acceptNeighborList(input)
-	ps.Borders, input = acceptBorderList(input)
-	ps.Passages, input = acceptPassageList(input)
-	ps.Resources, input = acceptResourceList(input)
-	// special hex or village name before encounters? ick?
-	ps.Encounters, input = acceptEncounterList(input)
-
-	// if we have something left over, we had invalid input.
-	// this will eventually be reported to the user.
-	if len(input) != 0 {
-		log.Printf("accept: %q: scout %d: success excess %q\n", unit, id, string(input))
-		if ps.Errors == nil {
-			ps.Errors = &ast.PatrolErrors_t{}
+	for len(input) != 0 {
+		if input[0] == ' ' || input[0] == ',' {
+			input = input[1:]
+		} else if elem, rest, ok := acceptNeighbor(input); ok {
+			ps.Neighbors, input = append(ps.Neighbors, elem), rest
+		} else if elem, rest, ok := acceptBorder(input); ok {
+			ps.Borders, input = append(ps.Borders, elem), rest
+		} else if elem, rest, ok := acceptPassage(input); ok {
+			ps.Passages, input = append(ps.Passages, elem), rest
+		} else if elem, rest, ok := acceptResource(input); ok {
+			ps.Resources, input = append(ps.Resources, elem), rest
+		} else if elem, rest, ok := acceptEncounter(input); ok {
+			ps.Encounters, input = append(ps.Encounters, elem), rest
+		} else {
+			// we either have a special hex or junk input
+			//fmt.Printf("patrol: input %q\n", input)
+			name, rest, _ := bytes.Cut(input, []byte{','})
+			if name = bytes.TrimSpace(name); len(name) == 0 {
+				// this should be investigated
+			} else if ps.HexName == nil {
+				ps.HexName = &ast.HexName_t{Name: strings.Title(string(name))}
+			} else {
+				if ps.Errors == nil {
+					ps.Errors = &ast.PatrolErrors_t{}
+				}
+				ps.Errors.ExcessInput = append(ps.Errors.ExcessInput, string(name))
+			}
+			input = rest
 		}
-		ps.Errors.ExcessInput = string(input)
 	}
+
+	//// remaining fields are optional
+	//ps.Neighbors, input = acceptNeighborList(input)
+	//ps.Borders, input = acceptBorderList(input)
+	//ps.Passages, input = acceptPassageList(input)
+	//ps.Resources, input = acceptResourceList(input)
+	//// special hex or village name before encounters? ick?
+	//ps.Encounters, input = acceptEncounterList(input)
+	//
+	//// if we have something left over, we had invalid input.
+	//// this will eventually be reported to the user.
+	//if len(input) != 0 {
+	//	log.Printf("accept: %q: scout %d: success excess %q\n", unit, id, string(input))
+	//	if ps.Errors == nil {
+	//		ps.Errors = &ast.PatrolErrors_t{}
+	//	}
+	//	ps.Errors.ExcessInput = string(input)
+	//}
 
 	return ps, true
 }

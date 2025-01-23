@@ -10,6 +10,17 @@ import (
 	"strconv"
 )
 
+// DebugConfig struct to hold the flag values
+var DebugConfig struct {
+	SplitTurns   bool
+	SplitFollows bool
+	SplitGoesTo  bool
+	SplitMarches bool
+	SplitSails   bool
+	SplitPatrols bool
+	SplitStatus  bool
+}
+
 // Split splits the input report into sections.
 // Each section contains the header and move data for a single unit.
 // All other lines are ignored.
@@ -48,30 +59,44 @@ func Split(input []byte) (sections []*Section) {
 			//log.Printf("section: %d: ignoring line %q\n", no, line)
 			continue
 		} else if is.FleetMovement(line) {
-			if section.Lines.FleetMoves == nil {
-				section.Lines.FleetMoves = norm.FleetMovement(line)
+			if DebugConfig.SplitSails {
+				if section.Lines.FleetMoves == nil {
+					section.Lines.FleetMoves = norm.FleetMovement(line)
+				}
 			}
 		} else if is.TribeFollows(line) {
-			if section.Lines.UnitFollows == nil {
-				section.Lines.UnitFollows = bdup(line)
+			if DebugConfig.SplitFollows {
+				if section.Lines.UnitFollows == nil {
+					section.Lines.UnitFollows = bdup(line)
+				}
 			}
 		} else if is.TribeGoesTo(line) {
-			if section.Lines.UnitGoesTo == nil {
-				section.Lines.UnitGoesTo = bdup(line)
+			if DebugConfig.SplitGoesTo {
+				if section.Lines.UnitGoesTo == nil {
+					section.Lines.UnitGoesTo = bdup(line)
+				}
 			}
 		} else if is.TribeMovement(line) {
-			if section.Lines.UnitMoves == nil {
-				section.Lines.UnitMoves = norm.TribeMovement(line)
+			if DebugConfig.SplitMarches {
+				if section.Lines.UnitMoves == nil {
+					section.Lines.UnitMoves = norm.TribeMovement(line)
+				}
 			}
 		} else if is.ScoutLine(line) {
-			section.Lines.ScoutLines = append(section.Lines.ScoutLines, norm.ScoutMovement(line))
+			if DebugConfig.SplitPatrols {
+				section.Lines.ScoutLines = append(section.Lines.ScoutLines, norm.ScoutMovement(line))
+			}
 		} else if is.TurnHeader(line) {
-			if section.Lines.Turn == nil {
-				section.Lines.Turn = bdup(line)
+			if DebugConfig.SplitTurns {
+				if section.Lines.Turn == nil {
+					section.Lines.Turn = bdup(line)
+				}
 			}
 		} else if is.UnitStatus(line) {
-			if section.Lines.Status == nil {
-				section.Lines.Status = norm.UnitStatus(line)
+			if DebugConfig.SplitStatus {
+				if section.Lines.Status == nil {
+					section.Lines.Status = norm.UnitStatus(line)
+				}
 			}
 			// set `section` to nil to avoid capturing lines between sections.
 			section = nil

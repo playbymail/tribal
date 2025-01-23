@@ -3,8 +3,10 @@
 package common
 
 import (
+	"bytes"
 	"github.com/playbymail/tribal/parser/ast"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -39,17 +41,40 @@ func ParseUnitStatus(curr ast.Coordinates_t, input []byte) (*ast.Status_t, error
 	s.Tile.Coordinates = curr
 
 	// remaining fields are optional
-	s.Tile.HexName, input, _ = acceptSpecialHexStatus(input)
-	s.Tile.Resources, input = acceptResourceNameList(input)
-	s.Tile.Neighbors, input = acceptNeighborList(input)
-	s.Tile.Borders, input = acceptBorderList(input)
-	s.Tile.Passages, input = acceptPassageList(input)
-	s.Tile.Encounters, input = acceptEncounterList(input)
-
-	// if we have something left over, we had invalid input.
-	// this will eventually be reported to the user.
-	if len(input) != 0 {
-		s.Errors.ExcessInput = string(input)
+	for len(input) != 0 {
+		if input[0] == ' ' || input[0] == ',' {
+			input = input[1:]
+		} else if elem, rest, ok := acceptResourceName(input); ok {
+			s.Tile.Resources, input = append(s.Tile.Resources, elem), rest
+		} else if elem, rest, ok := acceptNeighbor(input); ok {
+			s.Tile.Neighbors, input = append(s.Tile.Neighbors, elem), rest
+		} else if elem, rest, ok := acceptBorder(input); ok {
+			s.Tile.Borders, input = append(s.Tile.Borders, elem), rest
+		} else if elem, rest, ok := acceptPassage(input); ok {
+			s.Tile.Passages, input = append(s.Tile.Passages, elem), rest
+		} else if elem, rest, ok := acceptEncounter(input); ok {
+			s.Tile.Encounters, input = append(s.Tile.Encounters, elem), rest
+		} else {
+			// we either have a special hex or junk input
+			//fmt.Printf("status: input %q\n", input)
+			name, rest, _ := bytes.Cut(input, []byte{','})
+			if name = bytes.TrimSpace(name); len(name) == 0 {
+				// this should be investigated
+			} else if s.Tile.HexName == nil {
+				s.Tile.HexName = &ast.HexName_t{Name: strings.Title(string(name))}
+			} else {
+				if s.Errors == nil {
+					s.Errors = &ast.StatusErrors_t{}
+				}
+				s.Errors.ExcessInput = append(s.Errors.ExcessInput, string(name))
+			}
+			input = rest
+		}
+		//s.Tile.Resources, input = acceptResourceNameList(input)
+		//s.Tile.Neighbors, input = acceptNeighborList(input)
+		//s.Tile.Borders, input = acceptBorderList(input)
+		//s.Tile.Passages, input = acceptPassageList(input)
+		//s.Tile.Encounters, input = acceptEncounterList(input)
 	}
 
 	return &s, nil

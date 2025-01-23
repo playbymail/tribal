@@ -14,7 +14,7 @@ const (
 	None Passage_e = iota
 	Ford
 	Pass
-	River
+	StoneRoad
 )
 
 // MarshalJSON implements the json.Marshaler interface.
@@ -45,24 +45,21 @@ func (e Passage_e) String() string {
 var (
 	// EnumToString is a helper map for marshalling the enum
 	EnumToString = map[Passage_e]string{
-		None:  "",
-		Ford:  "Ford",
-		Pass:  "Pass",
-		River: "River",
+		Ford:      "Ford",
+		Pass:      "Pass",
+		StoneRoad: "Stone Road",
 	}
 	// StringToEnum is a helper map for unmarshalling the enum
 	StringToEnum = map[string]Passage_e{
-		"":      None,
-		"Ford":  Ford,
-		"Pass":  Pass,
-		"River": River,
+		"Ford":       Ford,
+		"Pass":       Pass,
+		"Stone Road": StoneRoad,
 	}
 
 	// LowerCaseToEnum is a helper map for parsing the passage
 	LowerCaseToEnum = map[string]Passage_e{
-		"":      None,
-		"ford":  Ford,
-		"pass":  Pass,
-		"river": River,
+		"ford":       Ford,
+		"pass":       Pass,
+		"stone road": StoneRoad,
 	}
 )

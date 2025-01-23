@@ -17,27 +17,26 @@ import (
 )
 
 var (
-	reBorder               = regexp.MustCompile(`^,(canal|river) `)
-	reCommaTerrainCode     = regexp.MustCompile(`^,([a-z]{1,3}) `)
+	reBorder               = regexp.MustCompile(`^(canal|river) `)
 	reDirectionDashTerrain = regexp.MustCompile(`^([ns][ew]?)-([a-z]{1,3})([ ,]|$)`)
 	reDirectionElement     = regexp.MustCompile(`^ ([ns][ew]?)(?: |,|$)`)
-	rePassage              = regexp.MustCompile(`^,(ford|pass|stone road) `)
-	reResource             = regexp.MustCompile(`^,find ([a-z]+(?: [a-z]+){0,2})(?: |,|$)`)
-	reResourceName         = regexp.MustCompile(`^,([a-z]+(?: [a-z]+){0,2})(?: |,|$)`)
-	reUnitIdElement        = regexp.MustCompile(`^[, ](\d{4}(?:[cefg][1-9])?)(?:[ ,]|$)`)
+	rePassage              = regexp.MustCompile(`^(ford|pass|stone road) `)
+	reResource             = regexp.MustCompile(`^find ([a-z]+(?: [a-z]+){0,2})(?: |,|$)`)
+	reResourceName         = regexp.MustCompile(`^([a-z]+(?: [a-z]+){0,2})(?: |,|$)`)
+	reTerrainCode          = regexp.MustCompile(`^([a-z]{1,3}) `)
+	reUnitIdElement        = regexp.MustCompile(`^(\d{4}(?:[cefg][1-9])?)(?:[ ,]|$)`)
 )
 
-// acceptBorder returns true if the input starts with a comma,
-// then a valid border code, and is followed with a list of directions.
+// acceptBorder returns true if the input starts with a valid border code, and is followed with a list of directions.
 //
-//	COMMA BorderCode (SPACE Direction)+
+//	BorderCode (SPACE Direction)+
 func acceptBorder(input []byte) (*ast.Border_t, []byte, bool) {
 	//log.Printf("accept: border %q\n", input)
 	match := reBorder.FindSubmatch(input)
 	if match == nil { // did not find border
 		return nil, input, false
 	}
-	code, rest := match[1], input[len(match[0])-1:] // capture border and advance to delimiter
+	code, rest := match[1], input[len(match[1]):] // capture border and advance to delimiter
 	enum, ok := border.LowerCaseToEnum[string(code)]
 	if !ok { // should never happen
 		return nil, input, false
@@ -135,7 +134,7 @@ func acceptEncounter(input []byte) (ast.UnitId_t, []byte, bool) {
 	if match == nil { // did not find unit id
 		return ast.UnitId_t(""), input, false
 	}
-	unit, rest := match[1], input[len(match[1])+1:] // capture unit id and advance to the delimiter
+	unit, rest := match[1], input[len(match[1]):] // capture unit id and advance to the delimiter
 	return ast.UnitId_t(unit), rest, true
 }
 
@@ -166,16 +165,15 @@ func acceptHexName(input []byte) (*ast.HexName_t, []byte, bool) {
 	return &ast.HexName_t{Name: strings.Title(string(name))}, rest, true
 }
 
-// AcceptNeighbor returns true if the input starts with a comma,
-// then a valid terrain code, and is followed with a list of directions.
+// AcceptNeighbor returns true if the input starts with a valid terrain code, and is followed with a list of directions.
 //
-//	COMMA TerrainCode (SPACE Direction)+
+//	TerrainCode (SPACE Direction)+
 func acceptNeighbor(input []byte) (*ast.Neighbor_t, []byte, bool) {
-	match := reCommaTerrainCode.FindSubmatch(input)
+	match := reTerrainCode.FindSubmatch(input)
 	if match == nil { // did not find terrain code
 		return nil, input, false
 	}
-	code, rest := match[1], input[len(match[1])+1:] // capture the terrain code and advance to the delimiter
+	code, rest := match[1], input[len(match[1]):] // capture the terrain code and advance to the delimiter
 	enum, ok := terrain.NeighborCodes[string(code)]
 	if !ok { // did not find terrain code
 		return nil, input, false
@@ -206,16 +204,15 @@ func acceptNeighborList(input []byte) ([]*ast.Neighbor_t, []byte) {
 	return list, input
 }
 
-// AcceptPassage returns true if the input starts with a comma followed by a
-// passage name and a list of directions.
+// AcceptPassage returns true if the input starts with a passage name and a list of directions.
 //
-// COMMA Passage (SPACE Direction)+
+//	Passage (SPACE Direction)+
 func acceptPassage(input []byte) (*ast.Passage_t, []byte, bool) {
 	match := rePassage.FindSubmatch(input)
 	if match == nil { // did not find passage
 		return nil, input, false
 	}
-	code, rest := match[1], input[len(match[1])+1:] // capture passage and advance to delimiter
+	code, rest := match[1], input[len(match[1]):] // capture passage and advance to delimiter
 	enum, ok := passage.LowerCaseToEnum[string(code)]
 	if !ok { // should never happen
 		return nil, input, false
@@ -238,9 +235,6 @@ func acceptPassageList(input []byte) ([]*ast.Passage_t, []byte) {
 }
 
 func acceptResource(input []byte) (resource.Resource_e, []byte, bool) {
-	if len(input) == 0 || input[0] != ',' {
-		return resource.None, input, false
-	}
 	match := reResource.FindSubmatch(input)
 	if match == nil {
 		return resource.None, input, false
@@ -251,7 +245,7 @@ func acceptResource(input []byte) (resource.Resource_e, []byte, bool) {
 	if !ok { // did not find resource name
 		return resource.None, input, false
 	}
-	input = input[6+len(word):] // consume and advance to the delimiter
+	input = input[5+len(word):] // consume and advance to the delimiter
 	//log.Printf("acceptResourceName: %q %q\n", word, input)
 	return enum, input, true
 }
@@ -266,21 +260,18 @@ func acceptResourceList(input []byte) ([]resource.Resource_e, []byte) {
 }
 
 func acceptResourceName(input []byte) (resource.Resource_e, []byte, bool) {
-	if len(input) == 0 || input[0] != ',' {
-		return resource.None, input, false
-	}
 	match := reResourceName.FindSubmatch(input)
 	if match == nil {
 		return resource.None, input, false
 	}
 	word := match[1]
-	log.Printf("accept: resource %q input %q\n", word, input)
+	//log.Printf("accept: resource %q input %q\n", word, input)
 	enum, ok := resource.LongResourceNames[string(word)]
 	if !ok { // did not find resource name
 		return resource.None, input, false
 	}
-	input = input[1+len(word):] // consume and advance to the delimiter
-	log.Printf("acceptResourceName: %q %q\n", word, input)
+	input = input[len(word):] // consume and advance to the delimiter
+	//log.Printf("acceptResourceName: %q %q\n", word, input)
 	return enum, input, true
 }
 

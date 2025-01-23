@@ -4,6 +4,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/playbymail/tribal"
 	"github.com/playbymail/tribal/adapters"
@@ -17,27 +19,62 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Lshortfile)
-	const logFileName = "ottomap.txt"
-	log.Printf("ottomap: writing log file to %s\n", logFileName)
 
-	if fd, err := os.OpenFile(logFileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644); err != nil {
+	flag.BoolVar(&section.DebugConfig.SplitTurns, "split-turns", false, "Enable splitting of turns")
+	flag.BoolVar(&section.DebugConfig.SplitFollows, "split-follows", false, "Enable splitting of follows")
+	flag.BoolVar(&section.DebugConfig.SplitGoesTo, "split-goes-to", false, "Enable splitting of goesTo")
+	flag.BoolVar(&section.DebugConfig.SplitMarches, "split-marches", false, "Enable splitting of marches")
+	flag.BoolVar(&section.DebugConfig.SplitSails, "split-sails", false, "Enable splitting of sails")
+	flag.BoolVar(&section.DebugConfig.SplitPatrols, "split-patrols", false, "Enable splitting of patrols")
+	flag.BoolVar(&section.DebugConfig.SplitStatus, "split-status", false, "Enable splitting of status")
+
+	flag.Parse()
+
+	log.SetFlags(log.Lshortfile)
+
+	var started time.Time
+
+	log.Printf("ottomap: writing log file to %s\n", "ottomap.txt")
+	if fd, err := os.OpenFile("ottomap.txt", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644); err != nil {
 		log.Fatal(err)
 	} else {
 		log.SetOutput(fd)
 	}
-
-	started := time.Now()
+	started = time.Now()
 	for _, clan := range []int{138} {
 		for _, turnId := range []tribal.TurnId_t{0, 1, 2, 3, 4, 5} {
 			if err := importWord(".", clan, turnId); err != nil {
+				log.Print(err)
+				log.SetOutput(os.Stderr)
 				log.Fatal(err)
 			}
 		}
 	}
-
 	log.SetOutput(os.Stderr)
+
+	log.Printf("ottomap: writing log file to %s\n", "0999-12.parser.txt")
+	if fd, err := os.OpenFile("0999-12.parser.txt", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644); err != nil {
+		log.Fatal(err)
+	} else {
+		log.SetOutput(fd)
+	}
+	started = time.Now()
+	section.Units = nil
+	if err := importPlainText(".", 999, 1200); err != nil {
+		log.Print(err)
+		log.SetOutput(os.Stderr)
+		log.Fatal(err)
+	}
 	log.Printf("ottomap: completed in %v", time.Since(started))
+	log.SetOutput(os.Stderr)
+
+	if buf, err := json.MarshalIndent(section.Units, "", "  "); err != nil {
+		log.Fatal(err)
+	} else if err = os.WriteFile("0999-12.parser.json", buf, 0644); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Printf("ottomap: wrote 0999-12.parser.json in %v\n", time.Since(started))
+	}
 }
 
 func importPlainText(path string, clan int, turnId tribal.TurnId_t) error {
@@ -48,7 +85,7 @@ func importPlainText(path string, clan int, turnId tribal.TurnId_t) error {
 	if !ok {
 		return fmt.Errorf("invalid turn id: %d", turnId)
 	}
-	reportName := fmt.Sprintf("%04d-%02d.%04d.report.text", turnYear, turnMonth, clan)
+	reportName := fmt.Sprintf("%04d-%02d.%04d.report.txt", turnYear, turnMonth, clan)
 	log.Printf("import: plain text: %s", reportName)
 
 	// load the file

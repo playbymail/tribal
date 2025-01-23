@@ -43,11 +43,27 @@ type Turn_t struct {
 
 // Moves_t defines a node containing a unit's movement and results in a turn report.
 type Moves_t struct {
-	Follows UnitId_t       `json:"follows,omitempty"`
-	GoesTo  *Coordinates_t `json:"goes_to,omitempty"`
-	Marches []*March_t     `json:"marches,omitempty"`
-	Patrols []*Patrol_t    `json:"patrols,omitempty"`
-	Errors  []error        `json:"errors,omitempty"`
+	Follows *Follows_t  `json:"follows,omitempty"`
+	GoesTo  *GoesTo_t   `json:"goes_to,omitempty"`
+	Marches []*March_t  `json:"marches,omitempty"`
+	Patrols []*Patrol_t `json:"patrols,omitempty"`
+	Errors  []error     `json:"errors,omitempty"`
+}
+
+// Follows_t defines the results for a follows line
+type Follows_t struct {
+	Id      UnitId_t      `json:"id"`
+	Follows UnitId_t      `json:"follows"`
+	From    Coordinates_t `json:"from,omitempty"`
+	To      Coordinates_t `json:"to,omitempty"`
+}
+
+// GoesTo_t defines the results for a goes to line
+type GoesTo_t struct {
+	Id     UnitId_t      `json:"id"`
+	From   Coordinates_t `json:"from,omitempty"`
+	GoesTo Coordinates_t `json:"goes_to,omitempty"`
+	To     Coordinates_t `json:"to,omitempty"`
 }
 
 // March_t defines the results of a single segment of a unit's land-based movement.
@@ -113,17 +129,20 @@ type MarchErrors_t struct {
 
 // PatrolErrors_t defines some common errors encountered while processing a segment in a turn report.
 type PatrolErrors_t struct {
-	ExcessInput string  `json:"excess_input,omitempty"`
-	Errors      []error `json:"errors,omitempty"`
+	ExcessInput []string `json:"excess_input,omitempty"`
+	Errors      []error  `json:"errors,omitempty"`
 }
 
 // Status_t defines the status line of a unit in a turn report.
 type Status_t struct {
-	Unit   UnitId_t
-	Tile   Tile_t
-	Errors struct {
-		ExcessInput string `json:"excess_input,omitempty"`
-	} `json:"errors,omitempty"`
+	Unit   UnitId_t        `json:"unit,omitempty"`
+	Tile   Tile_t          `json:"tile,omitempty"`
+	Errors *StatusErrors_t `json:"errors,omitempty"`
+}
+
+type StatusErrors_t struct {
+	ExcessInput []string `json:"excess_input,omitempty"`
+	Errors      []error  `json:"errors,omitempty"`
 }
 
 type Tile_t struct {

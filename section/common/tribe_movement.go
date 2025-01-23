@@ -92,6 +92,19 @@ func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain ter
 				}, segments[1:]
 			}
 		}
+	} else if match = reCantMoveWagons.FindSubmatch(segment); match != nil {
+		if dir, ok := direction.LowercaseToEnum[string(match[1])]; ok {
+			return &ast.March_t{
+				Id:        id,
+				From:      from,
+				Direction: direction.None,
+				To:        from,
+				Terrain:   fromTerrain,
+				Neighbors: []*ast.Neighbor_t{
+					{Terrain: terrain.UnknownJungleSwamp, Direction: []direction.Direction_e{dir}},
+				},
+			}, segments[1:]
+		}
 	} else if match = reNoFord.FindSubmatch(segment); match != nil {
 		if bor, ok := border.LowerCaseToEnum[string(match[1])]; ok {
 			if dir, ok := direction.LowercaseToEnum[string(match[2])]; ok {
@@ -149,21 +162,30 @@ func acceptMarchSuccess(id ast.UnitId_t, from ast.Coordinates_t, input []byte) (
 	input = rest
 
 	// remaining fields are optional
-	m.Neighbors, input = acceptNeighborList(input)
-	m.Borders, input = acceptBorderList(input)
-	m.Passages, input = acceptPassageList(input)
-
-	// remaining text must be special hex or village name or excess input
-	for _, word := range bytes.Split(input, []byte{','}) {
-		if word = bytes.TrimSpace(word); len(word) == 0 {
-			continue
-		} else if m.HexName == nil {
-			m.HexName = &ast.HexName_t{Name: strings.Title(string(word))}
+	for len(input) != 0 {
+		if input[0] == ' ' || input[0] == ',' {
+			input = input[1:]
+		} else if elem, rest, ok := acceptNeighbor(input); ok {
+			m.Neighbors, input = append(m.Neighbors, elem), rest
+		} else if elem, rest, ok := acceptBorder(input); ok {
+			m.Borders, input = append(m.Borders, elem), rest
+		} else if elem, rest, ok := acceptPassage(input); ok {
+			m.Passages, input = append(m.Passages, elem), rest
 		} else {
-			if m.Errors == nil {
-				m.Errors = &ast.MarchErrors_t{}
+			// we either have a special hex or junk input
+			//fmt.Printf("march: input %q\n", input)
+			name, rest, _ := bytes.Cut(input, []byte{','})
+			if name = bytes.TrimSpace(name); len(name) == 0 {
+				// this should be investigated
+			} else if m.HexName == nil {
+				m.HexName = &ast.HexName_t{Name: strings.Title(string(name))}
+			} else {
+				if m.Errors == nil {
+					m.Errors = &ast.MarchErrors_t{}
+				}
+				m.Errors.ExcessInput = append(m.Errors.ExcessInput, string(name))
 			}
-			m.Errors.ExcessInput = append(m.Errors.ExcessInput, string(input))
+			input = rest
 		}
 	}
 
