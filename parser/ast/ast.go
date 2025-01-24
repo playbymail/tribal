@@ -5,6 +5,7 @@ package ast
 import (
 	"github.com/playbymail/tribal/border"
 	"github.com/playbymail/tribal/direction"
+	"github.com/playbymail/tribal/item"
 	"github.com/playbymail/tribal/passage"
 	"github.com/playbymail/tribal/resource"
 	"github.com/playbymail/tribal/terrain"
@@ -52,6 +53,7 @@ type Moves_t struct {
 
 // Follows_t defines the results for a follows line
 type Follows_t struct {
+	Turn    TurnId_t      `json:turn`
 	Id      UnitId_t      `json:"id"`
 	Follows UnitId_t      `json:"follows"`
 	From    Coordinates_t `json:"from,omitempty"`
@@ -60,6 +62,7 @@ type Follows_t struct {
 
 // GoesTo_t defines the results for a goes to line
 type GoesTo_t struct {
+	Turn   TurnId_t      `json:"turn"`
 	Id     UnitId_t      `json:"id"`
 	From   Coordinates_t `json:"from,omitempty"`
 	GoesTo Coordinates_t `json:"goes_to,omitempty"`
@@ -68,6 +71,7 @@ type GoesTo_t struct {
 
 // March_t defines the results of a single segment of a unit's land-based movement.
 type March_t struct {
+	Turn      TurnId_t              `json:"turn"`
 	Id        UnitId_t              `json:"id"`
 	From      Coordinates_t         `json:"from,omitempty"`
 	Direction direction.Direction_e `json:"direction"`
@@ -82,6 +86,7 @@ type March_t struct {
 
 // Patrol_t defines the results of a single segment of a scout's patrol.
 type Patrol_t struct {
+	Turn       TurnId_t              `json:"turn"`
 	Id         UnitId_t              `json:"id"`
 	Patrol     int                   `json:"patrol"`
 	From       Coordinates_t         `json:"from,omitempty"`
@@ -93,8 +98,14 @@ type Patrol_t struct {
 	Passages   []*Passage_t          `json:"passages,omitempty"`
 	Resources  []resource.Resource_e `json:"resources,omitempty"`
 	Encounters []UnitId_t            `json:"encounters,omitempty"`
+	Items      []Item_t              `json:"items,omitempty"`
 	HexName    *HexName_t            `json:"hex_name,omitempty"`
 	Errors     *PatrolErrors_t       `json:"errors,omitempty"`
+}
+
+type Item_t struct {
+	Item     item.Item_e `json:"item"`
+	Quantity int         `json:"quantity,omitempty"`
 }
 
 // Neighbor_t defines the direction and type of neighboring tile in a turn report.
@@ -135,6 +146,7 @@ type PatrolErrors_t struct {
 
 // Status_t defines the status line of a unit in a turn report.
 type Status_t struct {
+	Turn   TurnId_t        `json:"turn"`
 	Unit   UnitId_t        `json:"unit,omitempty"`
 	Tile   Tile_t          `json:"tile,omitempty"`
 	Errors *StatusErrors_t `json:"errors,omitempty"`

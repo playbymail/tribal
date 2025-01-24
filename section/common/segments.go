@@ -24,7 +24,7 @@ var (
 	reResource             = regexp.MustCompile(`^find ([a-z]+(?: [a-z]+){0,2})(?: |,|$)`)
 	reResourceName         = regexp.MustCompile(`^([a-z]+(?: [a-z]+){0,2})(?: |,|$)`)
 	reTerrainCode          = regexp.MustCompile(`^([a-z]{1,3}) `)
-	reUnitIdElement        = regexp.MustCompile(`^(\d{4}(?:[cefg][1-9])?)(?:[ ,]|$)`)
+	reUnitIdElement        = regexp.MustCompile(`^(\d{4}(?:[cefg][1-9])?)(?: |,|$)`)
 )
 
 // acceptBorder returns true if the input starts with a valid border code, and is followed with a list of directions.
@@ -145,7 +145,7 @@ func acceptEncounter(input []byte) (ast.UnitId_t, []byte, bool) {
 func acceptEncounterList(input []byte) ([]ast.UnitId_t, []byte) {
 	var list []ast.UnitId_t
 	for match := reUnitIdElement.FindSubmatch(input); match != nil; match = reUnitIdElement.FindSubmatch(input) {
-		unit, rest := match[1], input[len(match[1])+1:] // capture unit id and advance to the delimiter
+		unit, rest := match[1], input[len(match[0]):] // capture unit id and advance to the delimiter
 		list, input = append(list, ast.UnitId_t(unit)), rest
 	}
 	return list, input

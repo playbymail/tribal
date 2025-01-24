@@ -15,12 +15,13 @@ var (
 // ParseTribeFollows parses the tribe follows line.
 //
 //	"tribe follows" UnitId
-func ParseTribeFollows(id ast.UnitId_t, from, to ast.Coordinates_t, input []byte) (*ast.Follows_t, error) {
+func ParseTribeFollows(turn ast.TurnId_t, id ast.UnitId_t, from, to ast.Coordinates_t, input []byte) (*ast.Follows_t, error) {
 	match := reUnitFollows.FindSubmatch(input)
 	if match == nil {
 		return nil, ast.ErrInvalidUnitFollows
 	}
 	return &ast.Follows_t{
+		Turn:    turn,
 		Id:      id,
 		Follows: ast.UnitId_t(match[1]),
 		From:    from,

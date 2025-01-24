@@ -10,10 +10,12 @@ import (
 var (
 	reBackslashDash = regexp.MustCompile(`\\+-+ *`)
 
-	reBackslashComma = regexp.MustCompile(`\\+,+`)
-	reBackslashUnit  = regexp.MustCompile(`\\+(\d{4}(?:[cefg]\d)?)`)
-	reCommaBackslash = regexp.MustCompile(`,+\\`)
-	reDirectionUnit  = regexp.MustCompile(`\b(ne|se|sw|nw|n|s) (\d{4}(?:[cefg]\d)?)`)
+	reBackslashComma   = regexp.MustCompile(`\\+,+`)
+	reBackslashUnit    = regexp.MustCompile(`\\+(\d{4}(?:[cefg]\d)?)`)
+	reCommaBackslash   = regexp.MustCompile(`,+\\`)
+	reCommaFindQtyItem = regexp.MustCompile(`,find [1-9]\d* `)
+	reCommaNoGroups    = regexp.MustCompile(`,no groups located`)
+	reDirectionUnit    = regexp.MustCompile(`\b(ne|se|sw|nw|n|s) (\d{4}(?:[cefg]\d)?)`)
 
 	// matches space direction comma
 	reSpaceDirectionCommaDirection = regexp.MustCompile(` (nw|ne|n|sw|se|s),(?:nw|ne|n|sw|se|s)([,\\]|$)`)
@@ -79,9 +81,16 @@ func ScoutMovement(line []byte) []byte {
 	if idx := bytes.Index(line, []byte(`,patrolled and found `)); idx != -1 {
 		line[idx] = '\\'
 	}
+	// change the separator for some things
+	for _, loc := range reCommaFindQtyItem.FindAllIndex(line, -1) {
+		line[loc[0]] = '\\'
+	}
+	for _, loc := range reCommaNoGroups.FindAllIndex(line, -1) {
+		line[loc[0]] = '\\'
+	}
 
-	// remove all trailing backslashes from the line
-	line = bytes.TrimRight(line, "\\")
+	// remove all trailing backslashes and commas from the line
+	line = bytes.TrimRight(line, "\\,")
 
 	// cleanup lists of directions and units
 	line = ListOfDirections(line)

@@ -19,8 +19,10 @@ var (
 // Per the spec, the line should look like this:
 //
 //	UnitId "status:" TerrainName (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Neighbor)* (COMMA Border)* (COMMA Passages)* (COMMA Units)*
-func ParseUnitStatus(curr ast.Coordinates_t, input []byte) (*ast.Status_t, error) {
-	var s ast.Status_t
+func ParseUnitStatus(turn ast.TurnId_t, curr ast.Coordinates_t, input []byte) (*ast.Status_t, error) {
+	s := ast.Status_t{
+		Turn: turn,
+	}
 
 	// expect unit id followed by " status:"
 	if match := reStatusPrefix.FindSubmatch(input); match == nil {

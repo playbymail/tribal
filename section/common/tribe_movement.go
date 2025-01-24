@@ -26,7 +26,7 @@ import (
 // failure.
 //
 // We parse the segments and return the list of moves.
-func ParseTribeMovement(id ast.UnitId_t, start ast.Coordinates_t, input []byte) (list []*ast.March_t, err error) {
+func ParseTribeMovement(turn ast.TurnId_t, id ast.UnitId_t, start ast.Coordinates_t, input []byte) (list []*ast.March_t, err error) {
 	// split into segments on the backslash
 	segments := bytes.Split(input, []byte{'\\'})
 	// expect "tribe movement:move" as the first segment
@@ -36,7 +36,7 @@ func ParseTribeMovement(id ast.UnitId_t, start ast.Coordinates_t, input []byte) 
 	segments = segments[1:]                       // accept the first segment
 	from, previousTerrain := start, terrain.Blank // assign the starting location
 	for len(segments) != 0 {
-		m, ok := acceptMarchSuccess(id, from, segments[0])
+		m, ok := acceptMarchSuccess(turn, id, from, segments[0])
 		if !ok {
 			break
 		}
@@ -48,7 +48,7 @@ func ParseTribeMovement(id ast.UnitId_t, start ast.Coordinates_t, input []byte) 
 	}
 
 	var failed *ast.March_t
-	if failed, segments = acceptMarchFailure(id, from, previousTerrain, segments); failed != nil {
+	if failed, segments = acceptMarchFailure(turn, id, from, previousTerrain, segments); failed != nil {
 		list = append(list, failed)
 	}
 
@@ -56,6 +56,7 @@ func ParseTribeMovement(id ast.UnitId_t, start ast.Coordinates_t, input []byte) 
 		// accept the excess input.
 		// this will have to be presented to the user later.
 		m := &ast.March_t{
+			Turn:      turn,
 			Id:        id,
 			From:      from,
 			Direction: direction.None,
@@ -72,7 +73,7 @@ func ParseTribeMovement(id ast.UnitId_t, start ast.Coordinates_t, input []byte) 
 	return list, nil
 }
 
-func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, segments [][]byte) (*ast.March_t, [][]byte) {
+func acceptMarchFailure(turn ast.TurnId_t, id ast.UnitId_t, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, segments [][]byte) (*ast.March_t, [][]byte) {
 	if len(segments) == 0 {
 		return nil, segments
 	}
@@ -81,6 +82,7 @@ func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain ter
 		if ter, ok := terrain.LongTerrainNames[string(match[1])]; ok {
 			if dir, ok := direction.LowercaseToEnum[string(match[2])]; ok {
 				return &ast.March_t{
+					Turn:      turn,
 					Id:        id,
 					From:      from,
 					Direction: direction.None,
@@ -95,6 +97,7 @@ func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain ter
 	} else if match = reCantMoveWagons.FindSubmatch(segment); match != nil {
 		if dir, ok := direction.LowercaseToEnum[string(match[1])]; ok {
 			return &ast.March_t{
+				Turn:      turn,
 				Id:        id,
 				From:      from,
 				Direction: direction.None,
@@ -109,6 +112,7 @@ func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain ter
 		if bor, ok := border.LowerCaseToEnum[string(match[1])]; ok {
 			if dir, ok := direction.LowercaseToEnum[string(match[2])]; ok {
 				return &ast.March_t{
+					Turn:      turn,
 					Id:        id,
 					From:      from,
 					Direction: direction.None,
@@ -124,6 +128,7 @@ func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain ter
 		if dir, ok := direction.LowercaseToEnum[string(match[1])]; ok {
 			if ter, ok := terrain.LongTerrainNames[string(match[2])]; ok {
 				return &ast.March_t{
+					Turn:      turn,
 					Id:        id,
 					From:      from,
 					Direction: direction.None,
@@ -142,7 +147,7 @@ func acceptMarchFailure(id ast.UnitId_t, from ast.Coordinates_t, fromTerrain ter
 // per the spec
 //
 //	Direction DASH TerrainCode (COMMA Neighbor)* (COMMA Border)* (COMMA Passage)* (COMMA (SpecialHex | VillageName))?
-func acceptMarchSuccess(id ast.UnitId_t, from ast.Coordinates_t, input []byte) (*ast.March_t, bool) {
+func acceptMarchSuccess(turn ast.TurnId_t, id ast.UnitId_t, from ast.Coordinates_t, input []byte) (*ast.March_t, bool) {
 	log.Printf("accept: success: from %q: input %q\n", from, input)
 	dir, ter, rest, ok := AcceptDirectionDashTerrain(input)
 	if !ok { // did not find direction-terrain
@@ -150,6 +155,7 @@ func acceptMarchSuccess(id ast.UnitId_t, from ast.Coordinates_t, input []byte) (
 		return nil, false
 	}
 	m := &ast.March_t{
+		Turn:      turn,
 		Id:        id,
 		From:      from,
 		Direction: dir,
