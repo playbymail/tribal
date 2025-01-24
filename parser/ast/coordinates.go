@@ -53,15 +53,15 @@ func TextToCoordinates(text []byte) (Coordinates_t, error) {
 	// obscured grid gets zero for row and column
 	if bytes.HasPrefix(text, []byte{'#', '#'}) {
 		c.GridRow, c.GridColumn = 0, 0
-	} else if !(0 <= c.GridRow && c.GridRow <= 26) {
+	} else if !(1 <= c.GridRow && c.GridRow <= 26) {
 		return c, domains.ErrInvalidCoordinates
-	} else if !(0 <= c.GridColumn && c.GridColumn <= 26) {
+	} else if !(1 <= c.GridColumn && c.GridColumn <= 26) {
 		return c, domains.ErrInvalidCoordinates
 	}
 	// all grids must have valid columns and rows
 	if !(1 <= c.Column && c.Column <= 30) {
 		return c, domains.ErrInvalidCoordinates
-	} else if !(1 <= c.Row && c.Row <= 20) {
+	} else if !(1 <= c.Row && c.Row <= 21) {
 		return c, domains.ErrInvalidCoordinates
 	}
 	return c, nil

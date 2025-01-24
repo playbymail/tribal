@@ -33,7 +33,7 @@ var (
 // failure.
 //
 // We parse the segments and return the list of patrol results.
-func ParseScoutMovement(turn ast.TurnId_t, id ast.UnitId_t, start ast.Coordinates_t, input []byte) (list []*ast.Patrol_t, err error) {
+func ParseScoutMovement(turn *ast.Turn_t, id ast.UnitId_t, start ast.Coordinates_t, input []byte) (list []*ast.Patrol_t, err error) {
 	// split into segments on the backslash
 	segments := bytes.Split(input, []byte{'\\'})
 	// expect "scout" ScoutId ":scout" as the first segment
@@ -91,7 +91,7 @@ var (
 	reNotEnoughMPs   = regexp.MustCompile(`^not enough m\.p's to move to ([ns][ew]?) into ([a-z]+(?: [a-z]+){0,2})$`)
 )
 
-func acceptPatrolFailure(turn ast.TurnId_t, id ast.UnitId_t, patrolId int, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, input []byte) (*ast.Patrol_t, bool) {
+func acceptPatrolFailure(turn *ast.Turn_t, id ast.UnitId_t, patrolId int, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, input []byte) (*ast.Patrol_t, bool) {
 	if match := reCantMove.FindSubmatch(input); match != nil {
 		if ter, ok := terrain.LongTerrainNames[string(match[1])]; ok {
 			if dir, ok := direction.LowercaseToEnum[string(match[2])]; ok {
@@ -147,7 +147,7 @@ func acceptPatrolFailure(turn ast.TurnId_t, id ast.UnitId_t, patrolId int, from 
 	return nil, false
 }
 
-func acceptPatrolFound(turn ast.TurnId_t, id ast.UnitId_t, patrolId int, from ast.Coordinates_t, ter terrain.Terrain_e, input []byte) (*ast.Patrol_t, bool) {
+func acceptPatrolFound(turn *ast.Turn_t, id ast.UnitId_t, patrolId int, from ast.Coordinates_t, ter terrain.Terrain_e, input []byte) (*ast.Patrol_t, bool) {
 	if bytes.HasPrefix(input, []byte(`no groups located`)) {
 		input = input[17:] // consume prefix
 		ps := &ast.Patrol_t{
@@ -231,7 +231,7 @@ func acceptPatrolFound(turn ast.TurnId_t, id ast.UnitId_t, patrolId int, from as
 	return nil, false
 }
 
-func acceptPatrolSuccess(turn ast.TurnId_t, id ast.UnitId_t, patrolId int, from ast.Coordinates_t, input []byte) (*ast.Patrol_t, bool) {
+func acceptPatrolSuccess(turn *ast.Turn_t, id ast.UnitId_t, patrolId int, from ast.Coordinates_t, input []byte) (*ast.Patrol_t, bool) {
 	//log.Printf("accept: success: from %q: input %q\n", from, input)
 	dir, ter, rest, ok := AcceptDirectionDashTerrain(input)
 	if !ok { // did not find direction-terrain

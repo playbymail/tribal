@@ -95,14 +95,14 @@ var g = &grammar{
 		},
 		{
 			name: "Year",
-			pos:  position{line: 39, col: 1, offset: 854},
+			pos:  position{line: 40, col: 1, offset: 915},
 			expr: &actionExpr{
-				pos: position{line: 39, col: 9, offset: 862},
+				pos: position{line: 40, col: 9, offset: 923},
 				run: (*parser).callonYear1,
 				expr: &oneOrMoreExpr{
-					pos: position{line: 39, col: 9, offset: 862},
+					pos: position{line: 40, col: 9, offset: 923},
 					expr: &ruleRefExpr{
-						pos:  position{line: 39, col: 9, offset: 862},
+						pos:  position{line: 40, col: 9, offset: 923},
 						name: "DIGIT",
 					},
 				},
@@ -110,14 +110,14 @@ var g = &grammar{
 		},
 		{
 			name: "Month",
-			pos:  position{line: 43, col: 1, offset: 914},
+			pos:  position{line: 44, col: 1, offset: 975},
 			expr: &actionExpr{
-				pos: position{line: 43, col: 10, offset: 923},
+				pos: position{line: 44, col: 10, offset: 984},
 				run: (*parser).callonMonth1,
 				expr: &oneOrMoreExpr{
-					pos: position{line: 43, col: 10, offset: 923},
+					pos: position{line: 44, col: 10, offset: 984},
 					expr: &ruleRefExpr{
-						pos:  position{line: 43, col: 10, offset: 923},
+						pos:  position{line: 44, col: 10, offset: 984},
 						name: "DIGIT",
 					},
 				},
@@ -125,14 +125,14 @@ var g = &grammar{
 		},
 		{
 			name: "TurnNo",
-			pos:  position{line: 47, col: 1, offset: 975},
+			pos:  position{line: 48, col: 1, offset: 1036},
 			expr: &actionExpr{
-				pos: position{line: 47, col: 11, offset: 985},
+				pos: position{line: 48, col: 11, offset: 1046},
 				run: (*parser).callonTurnNo1,
 				expr: &oneOrMoreExpr{
-					pos: position{line: 47, col: 11, offset: 985},
+					pos: position{line: 48, col: 11, offset: 1046},
 					expr: &ruleRefExpr{
-						pos:  position{line: 47, col: 11, offset: 985},
+						pos:  position{line: 48, col: 11, offset: 1046},
 						name: "DIGIT",
 					},
 				},
@@ -140,19 +140,19 @@ var g = &grammar{
 		},
 		{
 			name: "EOF",
-			pos:  position{line: 51, col: 1, offset: 1037},
+			pos:  position{line: 52, col: 1, offset: 1098},
 			expr: &notExpr{
-				pos: position{line: 51, col: 10, offset: 1046},
+				pos: position{line: 52, col: 10, offset: 1107},
 				expr: &anyMatcher{
-					line: 51, col: 11, offset: 1047,
+					line: 52, col: 11, offset: 1108,
 				},
 			},
 		},
 		{
 			name: "DIGIT",
-			pos:  position{line: 52, col: 1, offset: 1049},
+			pos:  position{line: 53, col: 1, offset: 1110},
 			expr: &charClassMatcher{
-				pos:        position{line: 52, col: 10, offset: 1058},
+				pos:        position{line: 53, col: 10, offset: 1119},
 				val:        "[0-9]",
 				ranges:     []rune{'0', '9'},
 				ignoreCase: false,
@@ -161,11 +161,11 @@ var g = &grammar{
 		},
 		{
 			name: "SP",
-			pos:  position{line: 53, col: 1, offset: 1064},
+			pos:  position{line: 54, col: 1, offset: 1125},
 			expr: &oneOrMoreExpr{
-				pos: position{line: 53, col: 10, offset: 1073},
+				pos: position{line: 54, col: 10, offset: 1134},
 				expr: &charClassMatcher{
-					pos:        position{line: 53, col: 10, offset: 1073},
+					pos:        position{line: 54, col: 10, offset: 1134},
 					val:        "[ \\t]",
 					chars:      []rune{' ', '\t'},
 					ignoreCase: false,
@@ -178,18 +178,19 @@ var g = &grammar{
 
 func (c *current) onTurnLine1(yyyy, mm, n any) (any, error) {
 	year, month, no := yyyy.(int), mm.(int), n.(int)
+	id := ast.Turn_t{Id: ast.TurnId_t(no), Year: year, Month: month}
 	if !(0 <= no && no <= 9999) {
-		return 0, ast.ErrInvalidTurnNo
+		id.Error = ast.ErrInvalidTurnNo
 	} else if !(899 <= year && year <= 9999) {
-		return 0, ast.ErrInvalidYear
+		id.Error = ast.ErrInvalidYear
 	} else if !(1 <= month && month <= 12) {
-		return 0, ast.ErrInvalidMonth
+		id.Error = ast.ErrInvalidMonth
 	} else if year == 899 && month != 12 {
-		return 0, ast.ErrInvalidMonth
+		id.Error = ast.ErrInvalidMonth
 	} else if no != (year-899)*12+month-12 {
-		return 0, ast.ErrTurnNoMismatch
+		id.Error = ast.ErrTurnNoMismatch
 	}
-	return ast.TurnId_t(no), nil
+	return &id, nil
 }
 
 func (p *parser) callonTurnLine1() (any, error) {

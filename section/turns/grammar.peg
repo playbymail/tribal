@@ -22,18 +22,19 @@ import (
 
 TurnLine <- "current turn " yyyy:Year "-" mm:Month "(#" n:TurnNo ")" .* EOF {
     year, month, no := yyyy.(int), mm.(int), n.(int)
+    id := ast.Turn_t{Id: ast.TurnId_t(no), Year: year, Month: month}
     if !(0 <= no && no <= 9999) {
-        return 0, ast.ErrInvalidTurnNo
+        id.Error = ast.ErrInvalidTurnNo
     } else if !(899 <= year && year <= 9999) {
-        return 0, ast.ErrInvalidYear
+        id.Error = ast.ErrInvalidYear
     } else if !(1 <= month && month <= 12) {
-        return 0, ast.ErrInvalidMonth
+        id.Error = ast.ErrInvalidMonth
     } else if year == 899 && month != 12 {
-        return 0, ast.ErrInvalidMonth
+        id.Error = ast.ErrInvalidMonth
     } else if no != (year-899)*12 + month - 12 {
-        return 0, ast.ErrTurnNoMismatch
+        id.Error = ast.ErrTurnNoMismatch
     }
-    return ast.TurnId_t(no), nil
+    return &id, nil
 }
 
 Year <- DIGIT+ {

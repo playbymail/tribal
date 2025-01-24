@@ -21,7 +21,7 @@ type Unit_t struct {
 	Name        UnitName_t    `json:"name,omitempty"`   // optional name field
 	PreviousHex Coordinates_t `json:"previous_hex"`     // location of unit at the beginning of the turn
 	CurrentHex  Coordinates_t `json:"current_hex"`      // location of unit at the end of the turn
-	Turn        TurnId_t      `json:"turn,omitempty"`   // turn number
+	Turn        *Turn_t       `json:"turn,omitempty"`   // turn number
 	Moves       *Moves_t      `json:"moves,omitempty"`  // moves made by the unit
 	Status      *Status_t     `json:"status,omitempty"` // status of the unit
 	Errors      []error       `json:"errors,omitempty"`
@@ -38,8 +38,10 @@ type TurnId_t int
 
 // Turn_t defines the turn year and month from a turn report.
 type Turn_t struct {
-	Year  int
-	Month int
+	Id    TurnId_t `json:"id"`
+	Year  int      `json:"year"`
+	Month int      `json:"month"`
+	Error error    `json:"error,omitempty"`
 }
 
 // Moves_t defines a node containing a unit's movement and results in a turn report.
@@ -53,7 +55,7 @@ type Moves_t struct {
 
 // Follows_t defines the results for a follows line
 type Follows_t struct {
-	Turn    TurnId_t      `json:turn`
+	Turn    *Turn_t       `json:turn`
 	Id      UnitId_t      `json:"id"`
 	Follows UnitId_t      `json:"follows"`
 	From    Coordinates_t `json:"from,omitempty"`
@@ -62,7 +64,7 @@ type Follows_t struct {
 
 // GoesTo_t defines the results for a goes to line
 type GoesTo_t struct {
-	Turn   TurnId_t      `json:"turn"`
+	Turn   *Turn_t       `json:"turn"`
 	Id     UnitId_t      `json:"id"`
 	From   Coordinates_t `json:"from,omitempty"`
 	GoesTo Coordinates_t `json:"goes_to,omitempty"`
@@ -71,7 +73,7 @@ type GoesTo_t struct {
 
 // March_t defines the results of a single segment of a unit's land-based movement.
 type March_t struct {
-	Turn      TurnId_t              `json:"turn"`
+	Turn      *Turn_t               `json:"turn"`
 	Id        UnitId_t              `json:"id"`
 	From      Coordinates_t         `json:"from,omitempty"`
 	Direction direction.Direction_e `json:"direction"`
@@ -86,7 +88,7 @@ type March_t struct {
 
 // Patrol_t defines the results of a single segment of a scout's patrol.
 type Patrol_t struct {
-	Turn       TurnId_t              `json:"turn"`
+	Turn       *Turn_t               `json:"turn"`
 	Id         UnitId_t              `json:"id"`
 	Patrol     int                   `json:"patrol"`
 	From       Coordinates_t         `json:"from,omitempty"`
@@ -146,7 +148,7 @@ type PatrolErrors_t struct {
 
 // Status_t defines the status line of a unit in a turn report.
 type Status_t struct {
-	Turn   TurnId_t        `json:"turn"`
+	Turn   *Turn_t         `json:"turn"`
 	Unit   UnitId_t        `json:"unit,omitempty"`
 	Tile   Tile_t          `json:"tile,omitempty"`
 	Errors *StatusErrors_t `json:"errors,omitempty"`

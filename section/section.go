@@ -88,8 +88,8 @@ func (s *Section) Parse(path string) error {
 		if v, err := turns.Parse(path, s.Lines.Turn); err != nil {
 			s.Errors = append(s.Errors, err)
 			log.Printf("section: turn %q: parse error %v\n", s.Lines.Turn, err)
-		} else if s.Unit.Turn, ok = v.(ast.TurnId_t); !ok {
-			panic(fmt.Sprintf("assert(%T == TurnId_t)", v))
+		} else if s.Unit.Turn, ok = v.(*ast.Turn_t); !ok {
+			panic(fmt.Sprintf("assert(%T == *Turn_t)", v))
 		} else {
 			//log.Printf("section: turn %q: %+v", s.Lines.Turn, s.Unit.Turn)
 		}

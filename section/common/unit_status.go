@@ -19,7 +19,7 @@ var (
 // Per the spec, the line should look like this:
 //
 //	UnitId "status:" TerrainName (COMMA (SpecialHex | VillageName))? (COMMA Resources)* (COMMA Neighbor)* (COMMA Border)* (COMMA Passages)* (COMMA Units)*
-func ParseUnitStatus(turn ast.TurnId_t, curr ast.Coordinates_t, input []byte) (*ast.Status_t, error) {
+func ParseUnitStatus(turn *ast.Turn_t, curr ast.Coordinates_t, input []byte) (*ast.Status_t, error) {
 	s := ast.Status_t{
 		Turn: turn,
 	}

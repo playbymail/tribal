@@ -26,7 +26,7 @@ import (
 // failure.
 //
 // We parse the segments and return the list of moves.
-func ParseTribeMovement(turn ast.TurnId_t, id ast.UnitId_t, start ast.Coordinates_t, input []byte) (list []*ast.March_t, err error) {
+func ParseTribeMovement(turn *ast.Turn_t, id ast.UnitId_t, start ast.Coordinates_t, input []byte) (list []*ast.March_t, err error) {
 	// split into segments on the backslash
 	segments := bytes.Split(input, []byte{'\\'})
 	// expect "tribe movement:move" as the first segment
@@ -73,7 +73,7 @@ func ParseTribeMovement(turn ast.TurnId_t, id ast.UnitId_t, start ast.Coordinate
 	return list, nil
 }
 
-func acceptMarchFailure(turn ast.TurnId_t, id ast.UnitId_t, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, segments [][]byte) (*ast.March_t, [][]byte) {
+func acceptMarchFailure(turn *ast.Turn_t, id ast.UnitId_t, from ast.Coordinates_t, fromTerrain terrain.Terrain_e, segments [][]byte) (*ast.March_t, [][]byte) {
 	if len(segments) == 0 {
 		return nil, segments
 	}
@@ -147,7 +147,7 @@ func acceptMarchFailure(turn ast.TurnId_t, id ast.UnitId_t, from ast.Coordinates
 // per the spec
 //
 //	Direction DASH TerrainCode (COMMA Neighbor)* (COMMA Border)* (COMMA Passage)* (COMMA (SpecialHex | VillageName))?
-func acceptMarchSuccess(turn ast.TurnId_t, id ast.UnitId_t, from ast.Coordinates_t, input []byte) (*ast.March_t, bool) {
+func acceptMarchSuccess(turn *ast.Turn_t, id ast.UnitId_t, from ast.Coordinates_t, input []byte) (*ast.March_t, bool) {
 	log.Printf("accept: success: from %q: input %q\n", from, input)
 	dir, ter, rest, ok := AcceptDirectionDashTerrain(input)
 	if !ok { // did not find direction-terrain
